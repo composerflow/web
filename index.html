@@ -73,9 +73,186 @@
 <html lang="en">
 
 <body class="bg-light">
+<!-- ===================== Audio Examples (4 vocals × 4 prompt backings) ===================== -->
+<section id="audio-examples" style="margin: 32px 0;">
+  <h2 style="margin: 0 0 12px;">Audio Examples</h2>
+  <p style="margin: 0 0 16px; opacity: 0.8;">
+    4 vocals, each paired with 4 different backings generated from different prompts.
+  </p>
+
+  <div id="audio-grid" style="overflow-x:auto;"></div>
+
+  <style>
+    .audioTable { border-collapse: collapse; min-width: 980px; width: 100%; }
+    .audioTable th, .audioTable td { border: 1px solid rgba(0,0,0,.15); padding: 10px; vertical-align: top; }
+    .audioTable th { position: sticky; top: 0; background: #fff; z-index: 1; text-align: left; }
+    .trackName { font-weight: 600; margin-bottom: 8px; }
+    .smallLabel { font-size: 12px; opacity: .8; margin: 6px 0 6px; }
+    audio { width: 260px; max-width: 100%; }
+  </style>
+
+  <script>
+    /**
+     * Set this to your folder relative to the HTML file.
+     * Example (if your HTML is in the parent folder):
+     *   const AUDIO_DIR = "./MUSDB_demo_116000text_7.0_con_1.5_rhythm_melody_chord_0.3_500/";
+     */
+    const AUDIO_DIR = "./MUSDB_demo_116000text_7.0_con_1.5_rhythm_melody_chord_0.3_500/";
+
+    /**
+     * Option A (recommended): create a manifest JSON in the folder:
+     *   AUDIO_DIR/manifest.json  ->  ["file1.wav","file2.wav",...]
+     *
+     * Option B: hardcode the list here (works anywhere, but you must keep it updated).
+     */
+    const AUDIO_FILES = [
+      // --- vocals (4) ---
+      "Al James - Schoolboy Facination_vocal.wav",
+      "BKS - Too Much_vocal.wav",
+      "Bobby Nobody - Stitch Up_vocal.wav",
+      "Juliet's Rescue - Heartbeats_vocal.wav",
+
+      // --- mixed backings (add all your mixed_*.wav here, the script will auto-pick 4 prompts per vocal) ---
+      // Example names from your screenshot (keep exact filenames):
+      "mixed_Al James - Schoolboy Facination_2_Energetic pop rock with electric guitars, bass, and upbeat drums.wav",
+      "mixed_Al James - Schoolboy Facination_2_Jazzy piano, with an exciting vibe, trumpet, drums.wav",
+      "mixed_Al James - Schoolboy Facination_2_Reggae style with a groovy bassline, offbeat guitar strumming, and a relaxed drum pattern.wav",
+      "mixed_Al James - Schoolboy Facination_2_rock backing music, high quality, with bass guitar, drums, synthesizer.wav",
+
+      "mixed_BKS - Too Much_20_Energetic pop rock with electric guitars, bass, and upbeat drums.wav",
+      "mixed_BKS - Too Much_20_Jazzy piano, with an exciting vibe, trumpet, drums.wav",
+      "mixed_BKS - Too Much_20_Reggae style with a groovy bassline, offbeat guitar strumming, and a relaxed drum pattern.wav",
+      "mixed_BKS - Too Much_20_rock backing music, high quality, with bass guitar, drums, synthesizer.wav",
+
+      "mixed_Bobby Nobody - Stitch Up_22_Energetic pop rock with electric guitars, bass, and upbeat drums.wav",
+      "mixed_Bobby Nobody - Stitch Up_22_Jazzy piano, with an exciting vibe, trumpet, drums.wav",
+      "mixed_Bobby Nobody - Stitch Up_22_Reggae style with a groovy bassline, offbeat guitar strumming, and a relaxed drum pattern.wav",
+      "mixed_Bobby Nobody - Stitch Up_22_rock backing music, high quality, with bass guitar, drums, synthesizer.wav",
+
+      "mixed_Juliet's Rescue - Heartbeats_15_Energetic pop rock with electric guitars, bass, and upbeat drums.wav",
+      "mixed_Juliet's Rescue - Heartbeats_15_Jazzy piano, with an exciting vibe, trumpet, drums.wav",
+      "mixed_Juliet's Rescue - Heartbeats_15_Reggae style with a groovy bassline, offbeat guitar strumming, and a relaxed drum pattern.wav",
+      "mixed_Juliet's Rescue - Heartbeats_15_rock backing music, high quality, with bass guitar, drums, synthesizer.wav",
+    ];
+
+    // ---------- helpers ----------
+    function audioTag(file) {
+      const src = encodeURI(AUDIO_DIR + file); // handles spaces, apostrophes, etc.
+      return `
+        <audio controls preload="none">
+          <source src="${src}" type="audio/wav">
+          Your browser does not support the audio element.
+        </audio>
+      `;
+    }
+
+    function parseVocalBaseName(vocalFile) {
+      // "Artist - Title_vocal.wav" -> "Artist - Title"
+      return vocalFile.replace(/_vocal\.wav$/i, "");
+    }
+
+    function parseMixedInfo(mixedFile) {
+      // Expected: mixed_<base>_<something>_<prompt>.wav
+      // We'll extract:
+      //   base = everything between "mixed_" and the last two "_" chunks
+      //   prompt = last "_" chunk before ".wav"
+      const noExt = mixedFile.replace(/\.wav$/i, "");
+      const parts = noExt.split("_");
+      if (parts.length < 4 || parts[0] !== "mixed") return null;
+
+      const prompt = parts[parts.length - 1];       // last chunk
+      // const tag = parts[parts.length - 2];        // e.g. "2" or "20" or "15" (unused)
+      const base = parts.slice(1, parts.length - 2).join("_"); // keep internal underscores if any
+      return { base, prompt, file: mixedFile };
+    }
+
+    function renderGridFromFileList(files) {
+      // 1) find vocals (first 4)
+      const vocals = files.filter(f => /_vocal\.wav$/i.test(f)).slice(0, 4);
+
+      // 2) collect mixed by base
+      const mixed = files
+        .filter(f => /^mixed_.*\.wav$/i.test(f))
+        .map(parseMixedInfo)
+        .filter(Boolean);
+
+      const mixedByBase = new Map(); // base -> Map(prompt -> file)
+      for (const m of mixed) {
+        if (!mixedByBase.has(m.base)) mixedByBase.set(m.base, new Map());
+        mixedByBase.get(m.base).set(m.prompt, m.file);
+      }
+
+      // 3) choose 4 prompts overall (union), stable order by first appearance
+      const promptOrder = [];
+      const promptSeen = new Set();
+      for (const v of vocals) {
+        const base = parseVocalBaseName(v);
+        const pmap = mixedByBase.get(base);
+        if (!pmap) continue;
+        for (const p of pmap.keys()) {
+          if (!promptSeen.has(p)) {
+            promptSeen.add(p);
+            promptOrder.push(p);
+          }
+        }
+      }
+      const prompts = promptOrder.slice(0, 4);
+
+      // 4) build table
+      let html = `<table class="audioTable">`;
+      html += `<thead><tr>
+        <th style="min-width: 320px;">Vocal</th>
+        ${prompts.map(p => `<th style="min-width: 280px;">Backing prompt<br><span class="smallLabel">${p}</span></th>`).join("")}
+      </tr></thead><tbody>`;
+
+      for (const v of vocals) {
+        const base = parseVocalBaseName(v);
+        const pmap = mixedByBase.get(base) || new Map();
+
+        html += `<tr>`;
+        html += `<td>
+          <div class="trackName">${base}</div>
+          <div class="smallLabel">Vocal</div>
+          ${audioTag(v)}
+        </td>`;
+
+        for (const p of prompts) {
+          const backingFile = pmap.get(p);
+          html += `<td>
+            ${backingFile
+              ? audioTag(backingFile)
+              : `<div class="smallLabel">No backing found for this prompt.</div>`
+            }
+          </td>`;
+        }
+        html += `</tr>`;
+      }
+
+      html += `</tbody></table>`;
+
+      const root = document.getElementById("audio-grid");
+      root.innerHTML = html;
+    }
+
+    async function initAudioExamples() {
+      // Try manifest.json first (Option A). If it fails, fall back to AUDIO_FILES (Option B).
+      try {
+        const res = await fetch(encodeURI(AUDIO_DIR + "manifest.json"), { cache: "no-store" });
+        if (!res.ok) throw new Error("manifest fetch failed");
+        const manifestFiles = await res.json();
+        if (!Array.isArray(manifestFiles)) throw new Error("manifest is not an array");
+        renderGridFromFileList(manifestFiles);
+      } catch (e) {
+        renderGridFromFileList(AUDIO_FILES);
+      }
+    }
+
+    initAudioExamples();
+  </script>
+</section>
 
 <div class="container py-4">
-  <h1 class="display-4 mb-3">ComposerFlow: MIDI-informed singing accompaniment generation in a compositional song pipeline</h1>
+  <h1 class="display-4 mb-3">MIDI-informed singing accompaniment generation in a compositional song pipeline</h1>
   <section aria-label="Paper abstract" class="mb-4">
     <!-- <p>
       Fang-Duo Tsai, Yi-An Lai, Fei-Yueh Chen, Li Chai, Hao-Chung Cheng, Yi-Hsuan Yang 
@@ -83,7 +260,7 @@
     <a href="https://composerflow.github.io/web/paper.pdf">Download PDF</a>
     <p><em>Preprint. Under review.</em></p> -->
     <h2 class="h5 mb-2">Abstract</h2>
-    <p class="lead mb-0">Open-source end-to-end song generators have emerged in the wake of commercial systems like Suno, offering one-shot music with lyrics but at the cost of large datasets and substantial compute. We propose ComposerFlow, a hierarchical pipeline that composes songs by chaining four specialized components—lyrics-to-melody, melody harmonization, singing-voice synthesis (SVS), and vocal-to-backing generation. This modular design is resource-efficient (single RTX 3090; ~6k hours of data) and editable: users can revise intermediate results (e.g., melody, chords, vocal) and deterministically regenerate all downstream audio. Leveraging SVS further mitigates common end-to-end issues such as unstable vocal timbre and phoneme errors. We evaluate our pipeline against representative end-to-end baselines and find comparable perceptual quality despite significantly lower training demands. We release audio demos at https://composerflow.github.io/web/. Our results suggest that modular, controllable pipelines are a practical alternative to monolithic song models, enabling rapid iteration and reliable production on accessible hardware.</p>
+    <p class="lead mb-0">Song generation aims to produce full songs with vocals and accompaniment from lyrics and text descriptions, yet end-to-end models remain data- and compute-intensive and provide limited editability. We advocate a compositional alternative that decomposes the task into melody composition, singing voice synthesis, and singing accompaniment generation. Central to our approach is MIDI-informed singing accompaniment generation (MIDI-SAG), which conditions accompaniment on the symbolic vocal-melody MIDI to improve rhythmic and harmonic alignment between singing and instrumentation. Moreover, beyond conventional SAG settings that assume continuously sung vocals, compositional song generation features intermittent vocals; we address this by combining explicit rhythmic/harmonic controls with audio continuation to keep the backing track consistent across vocal and non-vocal regions. With lightweight newly trained components requiring only 2.5k hours of audio on a single RTX 3090, our pipeline approaches the perceptual quality of recent open-source end-to-end baselines in several metrics.</p>
   </section>
 </div>
 
