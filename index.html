@@ -73,183 +73,6 @@
 <html lang="en">
 
 <body class="bg-light">
-<!-- ===================== Audio Examples (4 vocals × 4 prompt backings) ===================== -->
-<section id="audio-examples" style="margin: 32px 0;">
-  <h2 style="margin: 0 0 12px;">Audio Examples</h2>
-  <p style="margin: 0 0 16px; opacity: 0.8;">
-    4 vocals, each paired with 4 different backings generated from different prompts.
-  </p>
-
-  <div id="audio-grid" style="overflow-x:auto;"></div>
-
-  <style>
-    .audioTable { border-collapse: collapse; min-width: 980px; width: 100%; }
-    .audioTable th, .audioTable td { border: 1px solid rgba(0,0,0,.15); padding: 10px; vertical-align: top; }
-    .audioTable th { position: sticky; top: 0; background: #fff; z-index: 1; text-align: left; }
-    .trackName { font-weight: 600; margin-bottom: 8px; }
-    .smallLabel { font-size: 12px; opacity: .8; margin: 6px 0 6px; }
-    audio { width: 260px; max-width: 100%; }
-  </style>
-
-  <script>
-    /**
-     * Set this to your folder relative to the HTML file.
-     * Example (if your HTML is in the parent folder):
-     *   const AUDIO_DIR = "./MUSDB_demo_116000text_7.0_con_1.5_rhythm_melody_chord_0.3_500/";
-     */
-    const AUDIO_DIR = "./MUSDB_demo_116000text_7.0_con_1.5_rhythm_melody_chord_0.3_500/";
-
-    /**
-     * Option A (recommended): create a manifest JSON in the folder:
-     *   AUDIO_DIR/manifest.json  ->  ["file1.wav","file2.wav",...]
-     *
-     * Option B: hardcode the list here (works anywhere, but you must keep it updated).
-     */
-    const AUDIO_FILES = [
-      // --- vocals (4) ---
-      "Al James - Schoolboy Facination_vocal.wav",
-      "BKS - Too Much_vocal.wav",
-      "Bobby Nobody - Stitch Up_vocal.wav",
-      "Juliet's Rescue - Heartbeats_vocal.wav",
-
-      // --- mixed backings (add all your mixed_*.wav here, the script will auto-pick 4 prompts per vocal) ---
-      // Example names from your screenshot (keep exact filenames):
-      "mixed_Al James - Schoolboy Facination_2_Energetic pop rock with electric guitars, bass, and upbeat drums.wav",
-      "mixed_Al James - Schoolboy Facination_2_Jazzy piano, with an exciting vibe, trumpet, drums.wav",
-      "mixed_Al James - Schoolboy Facination_2_Reggae style with a groovy bassline, offbeat guitar strumming, and a relaxed drum pattern.wav",
-      "mixed_Al James - Schoolboy Facination_2_rock backing music, high quality, with bass guitar, drums, synthesizer.wav",
-
-      "mixed_BKS - Too Much_20_Energetic pop rock with electric guitars, bass, and upbeat drums.wav",
-      "mixed_BKS - Too Much_20_Jazzy piano, with an exciting vibe, trumpet, drums.wav",
-      "mixed_BKS - Too Much_20_Reggae style with a groovy bassline, offbeat guitar strumming, and a relaxed drum pattern.wav",
-      "mixed_BKS - Too Much_20_rock backing music, high quality, with bass guitar, drums, synthesizer.wav",
-
-      "mixed_Bobby Nobody - Stitch Up_22_Energetic pop rock with electric guitars, bass, and upbeat drums.wav",
-      "mixed_Bobby Nobody - Stitch Up_22_Jazzy piano, with an exciting vibe, trumpet, drums.wav",
-      "mixed_Bobby Nobody - Stitch Up_22_Reggae style with a groovy bassline, offbeat guitar strumming, and a relaxed drum pattern.wav",
-      "mixed_Bobby Nobody - Stitch Up_22_rock backing music, high quality, with bass guitar, drums, synthesizer.wav",
-
-      "mixed_Juliet's Rescue - Heartbeats_15_Energetic pop rock with electric guitars, bass, and upbeat drums.wav",
-      "mixed_Juliet's Rescue - Heartbeats_15_Jazzy piano, with an exciting vibe, trumpet, drums.wav",
-      "mixed_Juliet's Rescue - Heartbeats_15_Reggae style with a groovy bassline, offbeat guitar strumming, and a relaxed drum pattern.wav",
-      "mixed_Juliet's Rescue - Heartbeats_15_rock backing music, high quality, with bass guitar, drums, synthesizer.wav",
-    ];
-
-    // ---------- helpers ----------
-    function audioTag(file) {
-      const src = encodeURI(AUDIO_DIR + file); // handles spaces, apostrophes, etc.
-      return `
-        <audio controls preload="none">
-          <source src="${src}" type="audio/wav">
-          Your browser does not support the audio element.
-        </audio>
-      `;
-    }
-
-    function parseVocalBaseName(vocalFile) {
-      // "Artist - Title_vocal.wav" -> "Artist - Title"
-      return vocalFile.replace(/_vocal\.wav$/i, "");
-    }
-
-    function parseMixedInfo(mixedFile) {
-      // Expected: mixed_<base>_<something>_<prompt>.wav
-      // We'll extract:
-      //   base = everything between "mixed_" and the last two "_" chunks
-      //   prompt = last "_" chunk before ".wav"
-      const noExt = mixedFile.replace(/\.wav$/i, "");
-      const parts = noExt.split("_");
-      if (parts.length < 4 || parts[0] !== "mixed") return null;
-
-      const prompt = parts[parts.length - 1];       // last chunk
-      // const tag = parts[parts.length - 2];        // e.g. "2" or "20" or "15" (unused)
-      const base = parts.slice(1, parts.length - 2).join("_"); // keep internal underscores if any
-      return { base, prompt, file: mixedFile };
-    }
-
-    function renderGridFromFileList(files) {
-      // 1) find vocals (first 4)
-      const vocals = files.filter(f => /_vocal\.wav$/i.test(f)).slice(0, 4);
-
-      // 2) collect mixed by base
-      const mixed = files
-        .filter(f => /^mixed_.*\.wav$/i.test(f))
-        .map(parseMixedInfo)
-        .filter(Boolean);
-
-      const mixedByBase = new Map(); // base -> Map(prompt -> file)
-      for (const m of mixed) {
-        if (!mixedByBase.has(m.base)) mixedByBase.set(m.base, new Map());
-        mixedByBase.get(m.base).set(m.prompt, m.file);
-      }
-
-      // 3) choose 4 prompts overall (union), stable order by first appearance
-      const promptOrder = [];
-      const promptSeen = new Set();
-      for (const v of vocals) {
-        const base = parseVocalBaseName(v);
-        const pmap = mixedByBase.get(base);
-        if (!pmap) continue;
-        for (const p of pmap.keys()) {
-          if (!promptSeen.has(p)) {
-            promptSeen.add(p);
-            promptOrder.push(p);
-          }
-        }
-      }
-      const prompts = promptOrder.slice(0, 4);
-
-      // 4) build table
-      let html = `<table class="audioTable">`;
-      html += `<thead><tr>
-        <th style="min-width: 320px;">Vocal</th>
-        ${prompts.map(p => `<th style="min-width: 280px;">Backing prompt<br><span class="smallLabel">${p}</span></th>`).join("")}
-      </tr></thead><tbody>`;
-
-      for (const v of vocals) {
-        const base = parseVocalBaseName(v);
-        const pmap = mixedByBase.get(base) || new Map();
-
-        html += `<tr>`;
-        html += `<td>
-          <div class="trackName">${base}</div>
-          <div class="smallLabel">Vocal</div>
-          ${audioTag(v)}
-        </td>`;
-
-        for (const p of prompts) {
-          const backingFile = pmap.get(p);
-          html += `<td>
-            ${backingFile
-              ? audioTag(backingFile)
-              : `<div class="smallLabel">No backing found for this prompt.</div>`
-            }
-          </td>`;
-        }
-        html += `</tr>`;
-      }
-
-      html += `</tbody></table>`;
-
-      const root = document.getElementById("audio-grid");
-      root.innerHTML = html;
-    }
-
-    async function initAudioExamples() {
-      // Try manifest.json first (Option A). If it fails, fall back to AUDIO_FILES (Option B).
-      try {
-        const res = await fetch(encodeURI(AUDIO_DIR + "manifest.json"), { cache: "no-store" });
-        if (!res.ok) throw new Error("manifest fetch failed");
-        const manifestFiles = await res.json();
-        if (!Array.isArray(manifestFiles)) throw new Error("manifest is not an array");
-        renderGridFromFileList(manifestFiles);
-      } catch (e) {
-        renderGridFromFileList(AUDIO_FILES);
-      }
-    }
-
-    initAudioExamples();
-  </script>
-</section>
 
 <div class="container py-4">
   <h1 class="display-4 mb-3">MIDI-informed singing accompaniment generation in a compositional song pipeline</h1>
@@ -267,6 +90,144 @@
 <div style="text-align:center;">
   <img src="composerflow.png" alt="Album cover" style="max-width:75%; height:auto;">
 </div>
+
+<!-- === VOCAL × PROMPT BACKING GRID (same style as above) === -->
+<div class="container my-4">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h4 class="m-0">2. MUSDB Vocal × Prompt Backing (4×4)</h4>
+  </div>
+
+  <div class="alert alert-light border small">
+    <strong>This section shows 4 vocals paired with 4 different backings using different prompts.</strong>
+    Scroll horizontally if needed.
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-sm table-bordered align-middle" id="musdbGridTable">
+      <caption class="text-left">Each row is a vocal. Each column is a backing generated from a different prompt.</caption>
+      <thead class="thead-light" id="musdbGridHead"></thead>
+      <tbody id="musdbGridBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  // Put the folder path relative to THIS html file
+  const AUDIO_DIR = "MUSDB_demo_116000text_7.0_con_1.5_rhythm_melody_chord_0.3_500/";
+
+  // 4 vocals (rows)
+  const VOCALS = [
+    { key: "Al James - Schoolboy Facination", file: "Al James - Schoolboy Facination_vocal.wav" },
+    { key: "BKS - Too Much", file: "BKS - Too Much_vocal.wav" },
+    { key: "Bobby Nobody - Stitch Up", file: "Bobby Nobody - Stitch Up_vocal.wav" },
+    { key: "Juliet's Rescue - Heartbeats", file: "Juliet's Rescue - Heartbeats_vocal.wav" }
+  ];
+
+  // 4 prompts (columns) — pick any 4 you want
+  const PROMPTS = [
+    {
+      id: "energetic_pop_rock",
+      title: "Energetic pop rock",
+      text: "Energetic pop rock with electric guitars, bass, and upbeat drums"
+    },
+    {
+      id: "jazzy_piano",
+      title: "Jazzy piano",
+      text: "Jazzy piano, with an exciting vibe, trumpet, drums"
+    },
+    {
+      id: "reggae",
+      title: "Reggae",
+      text: "Reggae style with a groovy bassline, offbeat guitar strumming, and a relaxed drum pattern"
+    },
+    {
+      id: "rock_backing",
+      title: "Rock backing",
+      text: "rock backing music, high quality, with bass guitar, drums, synthesizer"
+    }
+  ];
+
+  // Map: vocal key -> prompt id -> backing filename
+  // Use EXACT filenames from your folder.
+  const BACKINGS = {
+    "Al James - Schoolboy Facination": {
+      energetic_pop_rock: "mixed_Al James - Schoolboy Facination_2_Energetic pop rock with electric guitars, bass, and upbeat drums.wav",
+      jazzy_piano:       "mixed_Al James - Schoolboy Facination_2_Jazzy piano, with an exciting vibe, trumpet, drums.wav",
+      reggae:            "mixed_Al James - Schoolboy Facination_2_Reggae style with a groovy bassline, offbeat guitar strumming, and a relaxed drum pattern.wav",
+      rock_backing:      "mixed_Al James - Schoolboy Facination_2_rock backing music, high quality, with bass guitar, drums, synthesizer.wav"
+    },
+    "BKS - Too Much": {
+      energetic_pop_rock: "mixed_BKS - Too Much_20_Energetic pop rock with electric guitars, bass, and upbeat drums.wav",
+      jazzy_piano:       "mixed_BKS - Too Much_20_Jazzy piano, with an exciting vibe, trumpet, drums.wav",
+      reggae:            "mixed_BKS - Too Much_20_Reggae style with a groovy bassline, offbeat guitar strumming, and a relaxed drum pattern.wav",
+      rock_backing:      "mixed_BKS - Too Much_20_rock backing music, high quality, with bass guitar, drums, synthesizer.wav"
+    },
+    "Bobby Nobody - Stitch Up": {
+      energetic_pop_rock: "mixed_Bobby Nobody - Stitch Up_22_Energetic pop rock with electric guitars, bass, and upbeat drums.wav",
+      jazzy_piano:       "mixed_Bobby Nobody - Stitch Up_22_Jazzy piano, with an exciting vibe, trumpet, drums.wav",
+      reggae:            "mixed_Bobby Nobody - Stitch Up_22_Reggae style with a groovy bassline, offbeat guitar strumming, and a relaxed drum pattern.wav",
+      rock_backing:      "mixed_Bobby Nobody - Stitch Up_22_rock backing music, high quality, with bass guitar, drums, synthesizer.wav"
+    },
+    "Juliet's Rescue - Heartbeats": {
+      energetic_pop_rock: "mixed_Juliet's Rescue - Heartbeats_15_Energetic pop rock with electric guitars, bass, and upbeat drums.wav",
+      jazzy_piano:       "mixed_Juliet's Rescue - Heartbeats_15_Jazzy piano, with an exciting vibe, trumpet, drums.wav",
+      reggae:            "mixed_Juliet's Rescue - Heartbeats_15_Reggae style with a groovy bassline, offbeat guitar strumming, and a relaxed drum pattern.wav",
+      rock_backing:      "mixed_Juliet's Rescue - Heartbeats_15_rock backing music, high quality, with bass guitar, drums, synthesizer.wav"
+    }
+  };
+
+  function audioHTML(filename) {
+    if (!filename) return `<div class="small text-muted">Missing</div>`;
+    const src = encodeURI(AUDIO_DIR + filename);
+    return `
+      <audio controls preload="metadata" style="width:300px;">
+        <source src="${src}" type="audio/wav">
+      </audio>
+    `;
+  }
+
+  // Build THEAD (same vibe as your existing header)
+  (function buildHead() {
+    const head = document.getElementById("musdbGridHead");
+    head.innerHTML = `
+      <tr>
+        <th class="sticky-col-1 nowrap" style="min-width:60px;">#</th>
+        <th class="sticky-col-2 prompt-col" style="min-width:340px;">Vocal</th>
+        ${PROMPTS.map(p => `
+          <th class="model-col prompt-col" style="min-width:340px;">
+            <div class="nowrap">${p.title}</div>
+            <div class="small text-muted">${p.text}</div>
+          </th>
+        `).join("")}
+      </tr>
+    `;
+  })();
+
+  // Build TBODY
+  (function buildBody() {
+    const body = document.getElementById("musdbGridBody");
+    body.innerHTML = VOCALS.map((v, idx) => {
+      const backingRow = BACKINGS[v.key] || {};
+      return `
+        <tr>
+          <td class="nowrap">${idx + 1}</td>
+
+          <td class="prompt-col">
+            <div class="small text-muted">${v.key}</div>
+            ${audioHTML(v.file)}
+          </td>
+
+          ${PROMPTS.map(p => `
+            <td>
+              ${audioHTML(backingRow[p.id])}
+            </td>
+          `).join("")}
+        </tr>
+      `;
+    }).join("");
+  })();
+</script>
+
 <!-- === DEMO TABLE === -->
 <div class="container my-4">
 
