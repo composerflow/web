@@ -92,16 +92,17 @@
 </div>
 
 <!-- =======================
-     Audio Samples (4 × 6 table)
+     Audio Samples (4 × 7 table: Vocal + 6 prompts)
      ======================= -->
 <section id="audio-samples" style="margin: 32px 0;">
-  <h2 style="margin: 0 0 12px;">1. MIDI-SAG w/o gt vocal MIDI</h2>
+  <h2 style="margin: 0 0 10px;">Audio Samples</h2>
+  <p style="margin: 0 0 18px; opacity: 0.8; line-height: 1.4;">
+    Each row is one vocal track. The first column is the original vocal, and the next 6 columns are mixes with different
+    backing prompts. Scroll horizontally if needed.
+  </p>
 
-  <!-- Optional: vocals list (kept OUTSIDE the 4×6 table) -->
-  <div id="vocals-list" style="display:grid; gap:10px; margin: 0 0 18px;"></div>
-
-  <div style="overflow-x:auto;">
-    <table id="audio-table" style="border-collapse: collapse; width: 100%; min-width: 980px;">
+  <div style="overflow-x:auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px;">
+    <table id="audio-table" style="border-collapse: collapse; width: 100%; min-width: 1300px;">
       <thead></thead>
       <tbody></tbody>
     </table>
@@ -113,17 +114,18 @@
   // If the HTML is INSIDE the folder, use: const AUDIO_BASE = "./";
   const AUDIO_BASE = "./MUSDB_demo_116000text_7.0_con_1.5_rhythm_melody_chord_0.3_500/";
 
-  // Column prompts (6)
-  const PROMPTS = [
-    "acoustic guitar, country music style",
-    "Energetic pop rock with electric guitars, bass, and upbeat drums",
-    "Jazzy piano, with an exciting vibe, trumpet, drums",
-    "Reggae style with a groovy bassline, offbeat guitar strumming, and a relaxed drum pattern",
-    "rock backing music, high quality, with bass guitar, drums, synthesizer",
-    "Uplifting orchestral background with light strings, piano arpeggios, and a hopeful mood",
+  // Column descriptions (Vocal + 6 prompts)
+  const COLUMNS = [
+    { label: "Vocal", desc: "Original vocal stem" },
+    { label: "Prompt 1", desc: "acoustic guitar, country music style" },
+    { label: "Prompt 2", desc: "Energetic pop rock with electric guitars, bass, and upbeat drums" },
+    { label: "Prompt 3", desc: "Jazzy piano, with an exciting vibe, trumpet, drums" },
+    { label: "Prompt 4", desc: "Reggae style with a groovy bassline, offbeat guitar strumming, and a relaxed drum pattern" },
+    { label: "Prompt 5", desc: "rock backing music, high quality, with bass guitar, drums, synthesizer" },
+    { label: "Prompt 6", desc: "Uplifting orchestral background with light strings, piano arpeggios, and a hopeful mood" },
   ];
 
-  // 4 vocals × 6 backings
+  // 4 rows: each has 1 vocal + 6 mixes
   const AUDIO = [
     {
       title: "AI James - Schoolboy Facination",
@@ -176,65 +178,85 @@
   ];
 
   function audioSrc(file) {
+    // encodeURI keeps "/" but escapes spaces, apostrophes, commas, etc.
     return encodeURI(AUDIO_BASE + file);
   }
 
-  // ---- Render vocals list (optional, not part of 4×6 table) ----
-  const vocalsList = document.getElementById("vocals-list");
-  AUDIO.forEach(t => {
-    const row = document.createElement("div");
-    row.style.cssText = "display:grid; gap:6px;";
-    row.innerHTML = `
-      <div style="font-weight:600;">${t.title} — vocal</div>
-      <audio controls preload="none" style="width:100%;" src="${audioSrc(t.vocal)}"></audio>
-    `;
-    vocalsList.appendChild(row);
-  });
-
-  // ---- Render 4×6 table (mixes only) ----
-  const thead = document.querySelector("#audio-table thead");
-  const tbody = document.querySelector("#audio-table tbody");
-
-  // Header row: 6 prompts
-  const htr = document.createElement("tr");
-  PROMPTS.forEach(p => {
+  function makeCellHeader(col) {
     const th = document.createElement("th");
-    th.textContent = p;
     th.style.cssText = `
       border: 1px solid rgba(0,0,0,0.15);
       padding: 10px;
       text-align: left;
       vertical-align: top;
-      font-size: 12px;
-      min-width: 160px;
       background: rgba(0,0,0,0.03);
+      min-width: 180px;
     `;
-    htr.appendChild(th);
-  });
-  thead.appendChild(htr);
+    th.innerHTML = `
+      <div style="font-weight:700; font-size:13px; margin-bottom:6px;">${col.label}</div>
+      <div style="font-size:12px; opacity:0.85; line-height:1.35;">${col.desc}</div>
+    `;
+    return th;
+  }
 
-  // Body: 4 rows (vocals), 6 cols (prompts) => 4×6
+  function makeAudioCell(src) {
+    const td = document.createElement("td");
+    td.style.cssText = `
+      border: 1px solid rgba(0,0,0,0.15);
+      padding: 10px;
+      vertical-align: top;
+    `;
+    td.innerHTML = `<audio controls preload="none" style="width: 100%;" src="${src}"></audio>`;
+    return td;
+  }
+
+  const thead = document.querySelector("#audio-table thead");
+  const tbody = document.querySelector("#audio-table tbody");
+
+  // Header row with descriptions on top
+  const headerRow = document.createElement("tr");
+  COLUMNS.forEach((c) => headerRow.appendChild(makeCellHeader(c)));
+  thead.appendChild(headerRow);
+
+  // 4 × 7 body (row label + 7 audios)
   AUDIO.forEach((track) => {
     const tr = document.createElement("tr");
+
+    // Optional row label cell (track name) – if you DON'T want this extra column,
+    // comment this block out. Keeping it would make the table 4×8.
+    const nameTd = document.createElement("td");
+    nameTd.style.cssText = `
+      border: 1px solid rgba(0,0,0,0.15);
+      padding: 10px;
+      vertical-align: top;
+      min-width: 220px;
+      font-weight: 600;
+      background: rgba(0,0,0,0.015);
+      position: sticky;
+      left: 0;
+    `;
+    nameTd.textContent = track.title;
+    // If you want EXACTLY 4×7 (no extra name column), remove the next line:
+    // tr.appendChild(nameTd);
+
+    // Vocal (col 1)
+    tr.appendChild(makeAudioCell(audioSrc(track.vocal)));
+
+    // 6 mixes (cols 2..7)
     track.mixes.forEach((mixFile) => {
-      const td = document.createElement("td");
-      td.style.cssText = `
-        border: 1px solid rgba(0,0,0,0.15);
-        padding: 10px;
-        vertical-align: top;
-      `;
-      td.innerHTML = `<audio controls preload="none" style="width: 100%;" src="${audioSrc(mixFile)}"></audio>`;
-      tr.appendChild(td);
+      tr.appendChild(makeAudioCell(audioSrc(mixFile)));
     });
+
     tbody.appendChild(tr);
   });
 </script>
+
 
 <!-- === DEMO TABLE === -->
 <div class="container my-4">
 
   <div class="d-flex justify-content-between align-items-center mb-2">
-    <h4 class="m-0">3. Random picked demo tracks</h4>
+    <h4 class="m-0">2. Random picked demo tracks</h4>
     <div>
       <button id="expandAll" class="btn btn-sm btn-outline-primary mr-2"><i class="bi bi-arrows-expand"></i> Expand all lyrics</button>
       <button id="collapseAll" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrows-collapse"></i> Collapse all lyrics</button>
@@ -803,7 +825,7 @@
         <!-- === 3×4 MATRIX: Lyrics × (3 Local Text Prompts), Rows = Chord Progressions === -->
         <div class="container my-5">
           <div class="d-flex justify-content-between align-items-center mb-2">
-            <h4 class="m-0">2. Chord Progression × Local Text Prompt (5×3)</h4>
+            <h4 class="m-0">3. Chord Progression × Local Text Prompt (5×3)</h4>
             <div class="small">
               <button class="btn btn-sm btn-outline-primary mr-2" data-toggle="collapse" data-target="#prompt-A,#prompt-B,#prompt-C">
                 <i class="bi bi-arrows-expand"></i> Toggle all text prompts
