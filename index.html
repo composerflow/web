@@ -92,17 +92,19 @@
 </div>
 
 <!-- =======================
-     Audio Samples section
-     Put this somewhere inside <body> where you want the audio gallery to appear.
+     Audio Samples (4 × 6 table)
      ======================= -->
 <section id="audio-samples" style="margin: 32px 0;">
-  <h2 style="margin: 0 0 12px;">Audio Samples</h2>
-  <p style="margin: 0 0 18px; opacity: 0.8;">
-    4 vocals × 6 backings (different prompts)
-  </p>
+  <h2 style="margin: 0 0 12px;">1. MIDI-SAG w/o gt vocal MIDI</h2>
 
-  <div id="audio-grid"
-       style="display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));">
+  <!-- Optional: vocals list (kept OUTSIDE the 4×6 table) -->
+  <div id="vocals-list" style="display:grid; gap:10px; margin: 0 0 18px;"></div>
+
+  <div style="overflow-x:auto;">
+    <table id="audio-table" style="border-collapse: collapse; width: 100%; min-width: 980px;">
+      <thead></thead>
+      <tbody></tbody>
+    </table>
   </div>
 </section>
 
@@ -111,106 +113,120 @@
   // If the HTML is INSIDE the folder, use: const AUDIO_BASE = "./";
   const AUDIO_BASE = "./MUSDB_demo_116000text_7.0_con_1.5_rhythm_melody_chord_0.3_500/";
 
-  // Data taken from your filenames (4 vocals, each with 6 prompt backings).
+  // Column prompts (6)
+  const PROMPTS = [
+    "acoustic guitar, country music style",
+    "Energetic pop rock with electric guitars, bass, and upbeat drums",
+    "Jazzy piano, with an exciting vibe, trumpet, drums",
+    "Reggae style with a groovy bassline, offbeat guitar strumming, and a relaxed drum pattern",
+    "rock backing music, high quality, with bass guitar, drums, synthesizer",
+    "Uplifting orchestral background with light strings, piano arpeggios, and a hopeful mood",
+  ];
+
+  // 4 vocals × 6 backings
   const AUDIO = [
     {
       title: "AI James - Schoolboy Facination",
       vocal: "AI James - Schoolboy Facination_vocal.wav",
       mixes: [
-        { prompt: "acoustic guitar, country music style", file: "mixed_AI James - Schoolboy Facination_2_acoustic guitar, country music style.wav" },
-        { prompt: "Energetic pop rock with electric guitars, bass, and upbeat drums", file: "mixed_AI James - Schoolboy Facination_2_Energetic pop rock with electric guitars, bass, and upbeat drums.wav" },
-        { prompt: "Jazzy piano, with an exciting vibe, trumpet, drums", file: "mixed_AI James - Schoolboy Facination_2_Jazzy piano, with an exciting vibe, trumpet, drums.wav" },
-        { prompt: "Reggae style with a groovy bassline, offbeat guitar strumming, and a relaxed drum pattern", file: "mixed_AI James - Schoolboy Facination_2_Reggae style with a groovy bassline, offbeat guitar strumming, and a relaxed drum pattern.wav" },
-        { prompt: "rock backing music, high quality, with bass guitar, drums, synthesizer", file: "mixed_AI James - Schoolboy Facination_2_rock backing music, high quality, with bass guitar, drums, synthesizer.wav" },
-        { prompt: "Uplifting orchestral background with light strings, piano arpeggios, and a hopeful mood", file: "mixed_AI James - Schoolboy Facination_2_Uplifting orchestral background with light strings, piano arpeggios, and a hopeful mood.wav" },
+        "mixed_AI James - Schoolboy Facination_2_acoustic guitar, country music style.wav",
+        "mixed_AI James - Schoolboy Facination_2_Energetic pop rock with electric guitars, bass, and upbeat drums.wav",
+        "mixed_AI James - Schoolboy Facination_2_Jazzy piano, with an exciting vibe, trumpet, drums.wav",
+        "mixed_AI James - Schoolboy Facination_2_Reggae style with a groovy bassline, offbeat guitar strumming, and a relaxed drum pattern.wav",
+        "mixed_AI James - Schoolboy Facination_2_rock backing music, high quality, with bass guitar, drums, synthesizer.wav",
+        "mixed_AI James - Schoolboy Facination_2_Uplifting orchestral background with light strings, piano arpeggios, and a hopeful mood.wav",
       ],
     },
     {
       title: "BKS - Too Much",
       vocal: "BKS - Too Much_vocal.wav",
       mixes: [
-        { prompt: "acoustic guitar, country music style", file: "mixed_BKS - Too Much_20_acoustic guitar, country music style.wav" },
-        { prompt: "Energetic pop rock with electric guitars, bass, and upbeat drums", file: "mixed_BKS - Too Much_20_Energetic pop rock with electric guitars, bass, and upbeat drums.wav" },
-        { prompt: "Jazzy piano, with an exciting vibe, trumpet, drums", file: "mixed_BKS - Too Much_20_Jazzy piano, with an exciting vibe, trumpet, drums.wav" },
-        { prompt: "Reggae style with a groovy bassline, offbeat guitar strumming, and a relaxed drum pattern", file: "mixed_BKS - Too Much_20_Reggae style with a groovy bassline, offbeat guitar strumming, and a relaxed drum pattern.wav" },
-        { prompt: "rock backing music, high quality, with bass guitar, drums, synthesizer", file: "mixed_BKS - Too Much_20_rock backing music, high quality, with bass guitar, drums, synthesizer.wav" },
-        { prompt: "Uplifting orchestral background with light strings, piano arpeggios, and a hopeful mood", file: "mixed_BKS - Too Much_20_Uplifting orchestral background with light strings, piano arpeggios, and a hopeful mood.wav" },
+        "mixed_BKS - Too Much_20_acoustic guitar, country music style.wav",
+        "mixed_BKS - Too Much_20_Energetic pop rock with electric guitars, bass, and upbeat drums.wav",
+        "mixed_BKS - Too Much_20_Jazzy piano, with an exciting vibe, trumpet, drums.wav",
+        "mixed_BKS - Too Much_20_Reggae style with a groovy bassline, offbeat guitar strumming, and a relaxed drum pattern.wav",
+        "mixed_BKS - Too Much_20_rock backing music, high quality, with bass guitar, drums, synthesizer.wav",
+        "mixed_BKS - Too Much_20_Uplifting orchestral background with light strings, piano arpeggios, and a hopeful mood.wav",
       ],
     },
     {
       title: "Bobby Nobody - Stitch Up",
       vocal: "Bobby Nobody - Stitch Up_vocal.wav",
       mixes: [
-        { prompt: "acoustic guitar, country music style", file: "mixed_Bobby Nobody - Stitch Up_22_acoustic guitar, country music style.wav" },
-        { prompt: "Energetic pop rock with electric guitars, bass, and upbeat drums", file: "mixed_Bobby Nobody - Stitch Up_22_Energetic pop rock with electric guitars, bass, and upbeat drums.wav" },
-        { prompt: "Jazzy piano, with an exciting vibe, trumpet, drums", file: "mixed_Bobby Nobody - Stitch Up_22_Jazzy piano, with an exciting vibe, trumpet, drums.wav" },
-        { prompt: "Reggae style with a groovy bassline, offbeat guitar strumming, and a relaxed drum pattern", file: "mixed_Bobby Nobody - Stitch Up_22_Reggae style with a groovy bassline, offbeat guitar strumming, and a relaxed drum pattern.wav" },
-        { prompt: "rock backing music, high quality, with bass guitar, drums, synthesizer", file: "mixed_Bobby Nobody - Stitch Up_22_rock backing music, high quality, with bass guitar, drums, synthesizer.wav" },
-        { prompt: "Uplifting orchestral background with light strings, piano arpeggios, and a hopeful mood", file: "mixed_Bobby Nobody - Stitch Up_22_Uplifting orchestral background with light strings, piano arpeggios, and a hopeful mood.wav" },
+        "mixed_Bobby Nobody - Stitch Up_22_acoustic guitar, country music style.wav",
+        "mixed_Bobby Nobody - Stitch Up_22_Energetic pop rock with electric guitars, bass, and upbeat drums.wav",
+        "mixed_Bobby Nobody - Stitch Up_22_Jazzy piano, with an exciting vibe, trumpet, drums.wav",
+        "mixed_Bobby Nobody - Stitch Up_22_Reggae style with a groovy bassline, offbeat guitar strumming, and a relaxed drum pattern.wav",
+        "mixed_Bobby Nobody - Stitch Up_22_rock backing music, high quality, with bass guitar, drums, synthesizer.wav",
+        "mixed_Bobby Nobody - Stitch Up_22_Uplifting orchestral background with light strings, piano arpeggios, and a hopeful mood.wav",
       ],
     },
     {
       title: "Juliet's Rescue - Heartbeats",
       vocal: "Juliet's Rescue - Heartbeats_vocal.wav",
       mixes: [
-        { prompt: "acoustic guitar, country music style", file: "mixed_Juliet's Rescue - Heartbeats_15_acoustic guitar, country music style.wav" },
-        { prompt: "Energetic pop rock with electric guitars, bass, and upbeat drums", file: "mixed_Juliet's Rescue - Heartbeats_15_Energetic pop rock with electric guitars, bass, and upbeat drums.wav" },
-        { prompt: "Jazzy piano, with an exciting vibe, trumpet, drums", file: "mixed_Juliet's Rescue - Heartbeats_15_Jazzy piano, with an exciting vibe, trumpet, drums.wav" },
-        { prompt: "Reggae style with a groovy bassline, offbeat guitar strumming, and a relaxed drum pattern", file: "mixed_Juliet's Rescue - Heartbeats_15_Reggae style with a groovy bassline, offbeat guitar strumming, and a relaxed drum pattern.wav" },
-        { prompt: "rock backing music, high quality, with bass guitar, drums, synthesizer", file: "mixed_Juliet's Rescue - Heartbeats_15_rock backing music, high quality, with bass guitar, drums, synthesizer.wav" },
-        { prompt: "Uplifting orchestral background with light strings, piano arpeggios, and a hopeful mood", file: "mixed_Juliet's Rescue - Heartbeats_15_Uplifting orchestral background with light strings, piano arpeggios, and a hopeful mood.wav" },
+        "mixed_Juliet's Rescue - Heartbeats_15_acoustic guitar, country music style.wav",
+        "mixed_Juliet's Rescue - Heartbeats_15_Energetic pop rock with electric guitars, bass, and upbeat drums.wav",
+        "mixed_Juliet's Rescue - Heartbeats_15_Jazzy piano, with an exciting vibe, trumpet, drums.wav",
+        "mixed_Juliet's Rescue - Heartbeats_15_Reggae style with a groovy bassline, offbeat guitar strumming, and a relaxed drum pattern.wav",
+        "mixed_Juliet's Rescue - Heartbeats_15_rock backing music, high quality, with bass guitar, drums, synthesizer.wav",
+        "mixed_Juliet's Rescue - Heartbeats_15_Uplifting orchestral background with light strings, piano arpeggios, and a hopeful mood.wav",
       ],
     },
   ];
 
   function audioSrc(file) {
-    // encodeURI preserves "/" but escapes spaces, apostrophes, commas, etc.
     return encodeURI(AUDIO_BASE + file);
   }
 
-  function el(tag, attrs = {}, children = []) {
-    const n = document.createElement(tag);
-    Object.entries(attrs).forEach(([k, v]) => {
-      if (k === "style") n.style.cssText = v;
-      else n.setAttribute(k, v);
-    });
-    (Array.isArray(children) ? children : [children]).forEach((c) => {
-      if (typeof c === "string") n.appendChild(document.createTextNode(c));
-      else if (c) n.appendChild(c);
-    });
-    return n;
-  }
+  // ---- Render vocals list (optional, not part of 4×6 table) ----
+  const vocalsList = document.getElementById("vocals-list");
+  AUDIO.forEach(t => {
+    const row = document.createElement("div");
+    row.style.cssText = "display:grid; gap:6px;";
+    row.innerHTML = `
+      <div style="font-weight:600;">${t.title} — vocal</div>
+      <audio controls preload="none" style="width:100%;" src="${audioSrc(t.vocal)}"></audio>
+    `;
+    vocalsList.appendChild(row);
+  });
 
-  const grid = document.getElementById("audio-grid");
+  // ---- Render 4×6 table (mixes only) ----
+  const thead = document.querySelector("#audio-table thead");
+  const tbody = document.querySelector("#audio-table tbody");
 
+  // Header row: 6 prompts
+  const htr = document.createElement("tr");
+  PROMPTS.forEach(p => {
+    const th = document.createElement("th");
+    th.textContent = p;
+    th.style.cssText = `
+      border: 1px solid rgba(0,0,0,0.15);
+      padding: 10px;
+      text-align: left;
+      vertical-align: top;
+      font-size: 12px;
+      min-width: 160px;
+      background: rgba(0,0,0,0.03);
+    `;
+    htr.appendChild(th);
+  });
+  thead.appendChild(htr);
+
+  // Body: 4 rows (vocals), 6 cols (prompts) => 4×6
   AUDIO.forEach((track) => {
-    const card = el("div", {
-      style: `
+    const tr = document.createElement("tr");
+    track.mixes.forEach((mixFile) => {
+      const td = document.createElement("td");
+      td.style.cssText = `
         border: 1px solid rgba(0,0,0,0.15);
-        border-radius: 12px;
-        padding: 14px;
-      `
+        padding: 10px;
+        vertical-align: top;
+      `;
+      td.innerHTML = `<audio controls preload="none" style="width: 100%;" src="${audioSrc(mixFile)}"></audio>`;
+      tr.appendChild(td);
     });
-
-    card.appendChild(el("h3", { style: "margin:0 0 10px; font-size: 16px;" }, track.title));
-
-    // Vocal
-    card.appendChild(el("div", { style: "margin: 0 0 10px;" }, [
-      el("div", { style: "font-weight: 600; margin: 0 0 6px;" }, "Vocal"),
-      el("audio", { controls: "", preload: "none", src: audioSrc(track.vocal), style: "width: 100%;" }),
-    ]));
-
-    // 6 mixes
-    const mixWrap = el("div", { style: "display:grid; gap: 10px;" });
-    track.mixes.forEach((m, idx) => {
-      mixWrap.appendChild(el("div", {}, [
-        el("div", { style: "font-size: 13px; margin: 0 0 6px; opacity: 0.9;" }, `${idx + 1}. ${m.prompt}`),
-        el("audio", { controls: "", preload: "none", src: audioSrc(m.file), style: "width: 100%;" }),
-      ]));
-    });
-
-    card.appendChild(mixWrap);
-    grid.appendChild(card);
+    tbody.appendChild(tr);
   });
 </script>
 
@@ -218,7 +234,7 @@
 <div class="container my-4">
 
   <div class="d-flex justify-content-between align-items-center mb-2">
-    <h4 class="m-0">1. Random picked demo tracks</h4>
+    <h4 class="m-0">3. Random picked demo tracks</h4>
     <div>
       <button id="expandAll" class="btn btn-sm btn-outline-primary mr-2"><i class="bi bi-arrows-expand"></i> Expand all lyrics</button>
       <button id="collapseAll" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrows-collapse"></i> Collapse all lyrics</button>
@@ -1961,7 +1977,7 @@
 <!-- === NEW SECTION: Different singer and key === -->
 <div class="container my-5">
   <div class="d-flex justify-content-between align-items-center mb-2">
-    <h4 class="m-0">3. Same Lyrics and Melody, but Different Singer and Key</h4>
+    <h4 class="m-0">4. Same Lyrics and Melody, but Different Singer and Key</h4>
     <div>
       <button id="expandAllDK" class="btn btn-sm btn-outline-primary mr-2">
         <i class="bi bi-arrows-expand"></i> Expand all lyrics
@@ -2511,7 +2527,7 @@
 </div>
 <div class="container my-5">
   <div class="d-flex justify-content-between align-items-center mb-2">
-    <h4 class="m-0">4. Same Lyrics and singer, different lyrics-to-melody model</h4>
+    <h4 class="m-0">5. Same Lyrics and singer, different lyrics-to-melody model</h4>
     <div>
       <button id="expandAllDK" class="btn btn-sm btn-outline-primary mr-2">
         <i class="bi bi-arrows-expand"></i> Expand all lyrics
@@ -2963,7 +2979,7 @@
 <!-- === NEW SECTION: Melody from Existing Songs vs Auto-generated Melody (2 Variants) === -->
 <div class="container my-5" id="um2cmp">
   <div class="d-flex justify-content-between align-items-center mb-2">
-    <h4 class="m-0">5. Melody from Existing Songs vs Auto-generated Melody (2 Variants)</h4>
+    <h4 class="m-0">6. Melody from Existing Songs vs Auto-generated Melody (2 Variants)</h4>
     <div>
       <button id="expandAllUM2CMP" class="btn btn-sm btn-outline-primary mr-2">
         <i class="bi bi-arrows-expand"></i> Expand all lyrics
