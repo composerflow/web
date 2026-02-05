@@ -26,6 +26,24 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
 
   <style>
+      /* Drag-to-scroll affordance */
+    .drag-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      cursor: grab;
+      user-select: none;
+    }
+    .drag-scroll:active {
+      cursor: grabbing;
+    }
+    
+    /* Optional: make the scroll container feel like section 2 */
+    #audio-table-wrap {
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 8px;
+      background: #fff;
+    }
+
     table { width: 100%; border-collapse: collapse; margin: 20px 0; }
     td { border: 1px solid #ccc; padding: 10px; text-align: center; }
 
@@ -73,6 +91,44 @@
 <html lang="en">
 
 <body class="bg-light">
+<script>
+  (function enableDragScroll(containerId) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+
+    let isDown = false;
+    let startX = 0;
+    let scrollLeft = 0;
+
+    el.addEventListener("mousedown", (e) => {
+      // Don't block interacting with audio controls/buttons
+      if (e.target.closest("audio, button, a, input, select, textarea, label")) return;
+
+      isDown = true;
+      startX = e.pageX - el.offsetLeft;
+      scrollLeft = el.scrollLeft;
+      el.classList.add("dragging");
+      e.preventDefault();
+    });
+
+    window.addEventListener("mouseup", () => {
+      isDown = false;
+      el.classList.remove("dragging");
+    });
+
+    el.addEventListener("mouseleave", () => {
+      isDown = false;
+      el.classList.remove("dragging");
+    });
+
+    el.addEventListener("mousemove", (e) => {
+      if (!isDown) return;
+      const x = e.pageX - el.offsetLeft;
+      const walk = (x - startX);
+      el.scrollLeft = scrollLeft - walk;
+    });
+  })("audio-table-wrap");
+</script>
 
 <div class="container py-4">
   <h1 class="display-4 mb-3">MIDI-informed singing accompaniment generation in a compositional song pipeline</h1>
@@ -101,13 +157,13 @@
     backing prompts.
   </p>
 
-  <div style="overflow-x:auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px;">
-    <table id="audio-table" style="border-collapse: collapse; width: 100%; min-width: 1300px;">
-      <thead></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-</section>
+  <div id="audio-table-wrap" class="table-responsive drag-scroll">
+  <table id="audio-table" class="table table-sm table-bordered align-middle mb-0">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
 
 <script>
   // ✅ Change this to your folder path (relative to the HTML file).
