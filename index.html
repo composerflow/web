@@ -91,14 +91,12 @@
     }
 
     .midi-demo-card {
-      border: 1px solid rgba(15, 23, 42, 0.18);
-      border-radius: 14px;
+      border: 1px solid #dbe4f0;
+      border-radius: 16px;
       padding: 12px;
-      background:
-        radial-gradient(circle at top left, rgba(59, 130, 246, 0.14), transparent 38%),
-        linear-gradient(180deg, #0f172a 0%, #020617 100%);
-      color: #dbeafe;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      color: #334155;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
     }
 
     .midi-demo-toolbar {
@@ -124,9 +122,9 @@
       align-items: center;
       padding: 4px 8px;
       border-radius: 999px;
-      background: rgba(148, 163, 184, 0.14);
-      border: 1px solid rgba(148, 163, 184, 0.18);
-      color: #cbd5e1;
+      background: #f8fafc;
+      border: 1px solid #dbe4f0;
+      color: #475569;
       font-size: 11px;
       letter-spacing: 0.02em;
     }
@@ -138,19 +136,20 @@
       gap: 10px;
       margin-top: 8px;
       font-size: 12px;
-      color: #94a3b8;
+      color: #64748b;
     }
 
     .midi-demo-status-row strong {
-      color: #e2e8f0;
+      color: #0f172a;
       font-weight: 600;
     }
 
     .midi-roll-shell {
-      border: 1px solid rgba(148, 163, 184, 0.15);
+      border: 1px solid #dbe4f0;
       border-radius: 12px;
       overflow: hidden;
-      background: #020617;
+      background: #ffffff;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
     }
 
     .midi-roll-shell.compact {
@@ -168,16 +167,16 @@
     }
 
     .midi-roll-keyboard {
-      background: linear-gradient(180deg, rgba(15, 23, 42, 0.95), rgba(2, 6, 23, 0.95));
-      border-right: 1px solid rgba(148, 163, 184, 0.12);
-      color: #94a3b8;
+      background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+      border-right: 1px solid #dbe4f0;
+      color: #64748b;
       font-size: 10px;
       user-select: none;
     }
 
     .midi-roll-ruler-spacer {
       height: 26px;
-      border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+      border-bottom: 1px solid #dbe4f0;
     }
 
     .midi-roll-key-row {
@@ -185,22 +184,22 @@
       align-items: center;
       justify-content: flex-end;
       padding-right: 8px;
-      border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+      border-bottom: 1px solid rgba(219, 228, 240, 0.8);
       box-sizing: border-box;
     }
 
     .midi-roll-key-row.black {
-      background: rgba(15, 23, 42, 0.95);
+      background: #edf2f7;
     }
 
     .midi-roll-key-row.white {
-      background: rgba(30, 41, 59, 0.72);
+      background: #ffffff;
     }
 
     .midi-roll-viewport {
       position: relative;
       overflow: auto;
-      background: #020617;
+      background: linear-gradient(180deg, #fffef5 0%, #ffffff 100%);
     }
 
     .midi-roll-shell.compact .midi-roll-viewport {
@@ -222,8 +221,8 @@
       top: 0;
       bottom: 0;
       width: 2px;
-      background: linear-gradient(180deg, #f8fafc 0%, #f59e0b 45%, #ef4444 100%);
-      box-shadow: 0 0 0 1px rgba(248, 250, 252, 0.16), 0 0 16px rgba(245, 158, 11, 0.35);
+      background: linear-gradient(180deg, #60a5fa 0%, #38bdf8 100%);
+      box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1), 0 0 10px rgba(59, 130, 246, 0.2);
       pointer-events: none;
       z-index: 4;
     }
@@ -234,12 +233,12 @@
       justify-content: center;
       min-height: 132px;
       padding: 18px;
-      color: #94a3b8;
+      color: #64748b;
       font-size: 12px;
       letter-spacing: 0.02em;
       background:
-        linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.94)),
-        repeating-linear-gradient(90deg, rgba(148,163,184,0.06) 0, rgba(148,163,184,0.06) 1px, transparent 1px, transparent 72px);
+        linear-gradient(135deg, rgba(248, 250, 252, 0.98), rgba(255, 255, 255, 0.94)),
+        repeating-linear-gradient(90deg, rgba(219,228,240,0.6) 0, rgba(219,228,240,0.6) 1px, transparent 1px, transparent 72px);
     }
 
     .midi-workspace-modal[hidden] {
@@ -258,30 +257,28 @@
     .midi-workspace-backdrop {
       position: absolute;
       inset: 0;
-      background: rgba(2, 6, 23, 0.76);
-      backdrop-filter: blur(4px);
+      background: rgba(241, 245, 249, 0.72);
+      backdrop-filter: blur(3px);
     }
 
     .midi-workspace-dialog {
       position: relative;
       width: min(1240px, 96vw);
-      height: min(660px, 76vh);
+      height: min(540px, 62vh);
       display: flex;
       flex-direction: column;
-      border-radius: 22px;
+      border-radius: 18px;
       overflow: hidden;
-      background:
-        radial-gradient(circle at top left, rgba(37, 99, 235, 0.16), transparent 30%),
-        linear-gradient(180deg, #0f172a 0%, #020617 100%);
-      border: 1px solid rgba(148, 163, 184, 0.22);
-      box-shadow: 0 28px 90px rgba(2, 6, 23, 0.56);
-      color: #e2e8f0;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      border: 1px solid #dbe4f0;
+      box-shadow: 0 22px 70px rgba(15, 23, 42, 0.14);
+      color: #0f172a;
     }
 
     .midi-workspace-header,
     .midi-workspace-toolbar,
     .midi-workspace-footer {
-      padding: 16px 20px;
+      padding: 12px 18px;
     }
 
     .midi-workspace-header {
@@ -289,20 +286,20 @@
       justify-content: space-between;
       align-items: center;
       gap: 16px;
-      border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+      border-bottom: 1px solid #e2e8f0;
     }
 
     .midi-workspace-header h3 {
       margin: 0;
-      font-size: 1.15rem;
+      font-size: 1.05rem;
       font-weight: 700;
-      color: #f8fafc;
+      color: #0f172a;
     }
 
     .midi-workspace-header p {
-      margin: 4px 0 0;
-      color: #94a3b8;
-      font-size: 13px;
+      margin: 2px 0 0;
+      color: #64748b;
+      font-size: 12px;
     }
 
     .midi-workspace-toolbar {
@@ -311,7 +308,8 @@
       justify-content: space-between;
       align-items: center;
       gap: 12px;
-      border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+      border-bottom: 1px solid #e2e8f0;
+      background: #f8fafc;
     }
 
     .midi-workspace-controls,
@@ -329,10 +327,10 @@
     .midi-workspace-body {
       flex: 1 1 auto;
       min-height: 0;
-      padding: 14px 20px 10px;
+      padding: 10px 18px 8px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
     }
 
     .midi-workspace-roll-host {
@@ -353,15 +351,65 @@
       justify-content: space-between;
       align-items: center;
       gap: 16px;
-      border-top: 1px solid rgba(148, 163, 184, 0.12);
-      font-size: 13px;
-      color: #94a3b8;
+      border-top: 1px solid #e2e8f0;
+      font-size: 12px;
+      color: #64748b;
+      background: #ffffff;
+    }
+
+    .midi-volume-control {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #ffffff;
+      border: 1px solid #dbe4f0;
+      color: #334155;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .midi-volume-control input[type="range"] {
+      width: 110px;
+      accent-color: #60a5fa;
+    }
+
+    .midi-seek-strip {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .midi-seek-time {
+      font-variant-numeric: tabular-nums;
+      color: #64748b;
+      min-width: 54px;
+      text-align: center;
+    }
+
+    .midi-seek-range {
+      flex: 1 1 auto;
+      width: 100%;
+      accent-color: #2563eb;
+    }
+
+    .midi-seek-caption {
+      color: #64748b;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .midi-workspace-controls .btn,
+    .midi-demo-toolbar .btn {
+      border-radius: 10px;
     }
 
     @media (max-width: 992px) {
       .midi-workspace-dialog {
         width: 98vw;
-        height: 72vh;
+        height: 58vh;
       }
 
       .midi-workspace-header,
@@ -586,6 +634,14 @@
       const workspaceMeta = document.getElementById("midi-workspace-meta");
       const workspaceStatus = document.getElementById("midi-workspace-status");
       const workspaceRollHost = document.getElementById("midi-workspace-roll-host");
+      const workspaceVolume = document.getElementById("midi-workspace-volume");
+      const workspaceVolumeValue = document.getElementById("midi-workspace-volume-value");
+      const workspaceSeek = document.getElementById("midi-workspace-seek");
+      const workspaceSeekCurrent = document.getElementById("midi-workspace-seek-current");
+      const workspaceSeekTotal = document.getElementById("midi-workspace-seek-total");
+
+      const BASE_MIDI_GAIN = 0.34;
+      let midiVolumeMultiplier = Number(workspaceVolume.value) / 100;
 
       function pauseAllAudios() {
         const audios = document.getElementsByTagName("audio");
@@ -634,6 +690,14 @@
         });
       }
 
+      function updateWorkspaceSeek(seconds, duration) {
+        const clampedSeconds = Math.max(0, Math.min(seconds || 0, duration || 0));
+        workspaceSeek.max = String(duration || 0);
+        workspaceSeek.value = String(clampedSeconds);
+        workspaceSeekCurrent.textContent = formatSeconds(clampedSeconds);
+        workspaceSeekTotal.textContent = formatSeconds(duration || 0);
+      }
+
       function readAscii(view, offset, length) {
         let result = "";
         for (let i = 0; i < length; i++) {
@@ -677,6 +741,19 @@
 
       function noteNumberToFrequency(noteNumber) {
         return 440 * Math.pow(2, (noteNumber - 69) / 12);
+      }
+
+      function updateVolumeLabel() {
+        workspaceVolumeValue.textContent = `${Math.round(midiVolumeMultiplier * 100)}%`;
+      }
+
+      function applyMidiVolume() {
+        if (!activeMidiPlayback || !activeMidiPlayback.masterGain || !midiAudioContext) return;
+        activeMidiPlayback.masterGain.gain.setTargetAtTime(
+          BASE_MIDI_GAIN * midiVolumeMultiplier,
+          midiAudioContext.currentTime,
+          0.02
+        );
       }
 
       function midiMetaLabel(parsed) {
@@ -965,7 +1042,7 @@
           y: 0,
           width: timelineWidth,
           height: contentHeight,
-          fill: "#020617",
+          fill: compact ? "#ffffff" : "#fffef6",
         }));
 
         if (!compact) {
@@ -974,7 +1051,7 @@
             y: 0,
             width: timelineWidth,
             height: topPadding,
-            fill: "#0b1220",
+            fill: "#ffffff",
           }));
         }
 
@@ -985,7 +1062,7 @@
             y,
             width: timelineWidth,
             height: laneHeight,
-            fill: isBlackKey(note) ? "rgba(15,23,42,0.88)" : "rgba(17,24,39,0.88)",
+            fill: isBlackKey(note) ? "rgba(241,245,249,0.98)" : "rgba(255,255,255,0.98)",
           }));
 
           svg.appendChild(createSvgElement("line", {
@@ -993,7 +1070,7 @@
             y1: y,
             x2: timelineWidth,
             y2: y,
-            stroke: "rgba(148,163,184,0.12)",
+            stroke: "rgba(226,232,240,0.95)",
             "stroke-width": "1",
           }));
         }
@@ -1005,19 +1082,30 @@
             y1: topPadding,
             x2: x,
             y2: contentHeight,
-            stroke: "rgba(148,163,184,0.14)",
+            stroke: "rgba(226,232,240,0.9)",
             "stroke-width": "1",
           }));
         });
 
         parsed.barTimes.forEach((barTime, index) => {
           const x = (barTime / duration) * timelineWidth;
+          if (!compact && index % 2 === 0) {
+            const nextBarTime = parsed.barTimes[index + 1] ?? duration;
+            const nextX = (nextBarTime / duration) * timelineWidth;
+            svg.appendChild(createSvgElement("rect", {
+              x,
+              y: topPadding,
+              width: Math.max(0, nextX - x),
+              height: contentHeight - topPadding,
+              fill: "rgba(250, 245, 219, 0.45)",
+            }));
+          }
           svg.appendChild(createSvgElement("line", {
             x1: x,
             y1: 0,
             x2: x,
             y2: contentHeight,
-            stroke: "rgba(96,165,250,0.38)",
+            stroke: index === 0 ? "rgba(15,23,42,0.62)" : "rgba(96,165,250,0.58)",
             "stroke-width": "1.5",
           }));
 
@@ -1025,11 +1113,11 @@
             const label = createSvgElement("text", {
               x: x + 4,
               y: 16,
-              fill: "rgba(191,219,254,0.82)",
+              fill: "rgba(100,116,139,0.9)",
               "font-size": "11",
               "font-family": "monospace",
             });
-            label.textContent = `bar ${index + 1}`;
+            label.textContent = `${barTime.toFixed(1)}s`;
             svg.appendChild(label);
           }
         });
@@ -1039,7 +1127,9 @@
           const width = Math.max(3, (event.duration / duration) * timelineWidth);
           const y = topPadding + (parsed.maxNote - event.noteNumber) * laneHeight + 1;
           const height = Math.max(2, laneHeight - 2);
-          const hue = 205 + ((event.noteNumber + index) % 24) * 3;
+          const fill = compact
+            ? `rgba(153, 66, 50, ${0.74 + event.velocity * 0.16})`
+            : `rgba(139, 55, 42, ${0.72 + event.velocity * 0.18})`;
 
           svg.appendChild(createSvgElement("rect", {
             x,
@@ -1048,8 +1138,8 @@
             height,
             rx: compact ? 1.5 : 3,
             ry: compact ? 1.5 : 3,
-            fill: `hsla(${hue}, 82%, ${compact ? "64%" : "58%"}, ${0.62 + event.velocity * 0.25})`,
-            stroke: "rgba(255,255,255,0.08)",
+            fill,
+            stroke: compact ? "rgba(125, 48, 36, 0.2)" : "rgba(115, 43, 32, 0.28)",
             "stroke-width": compact ? "0.4" : "0.7",
           }));
         });
@@ -1092,6 +1182,17 @@
           const desiredScroll = x - surface.viewport.clientWidth * 0.35;
           surface.viewport.scrollLeft = Math.max(0, Math.min(maxScroll, desiredScroll));
         }
+      }
+
+      function updateWorkspacePosition(seconds, duration) {
+        if (!activeWorkspace) return;
+        const safeDuration = Math.max(duration || activeWorkspace.duration || 0, 0.001);
+        activeWorkspace.currentOffset = Math.max(0, Math.min(seconds || 0, safeDuration));
+        if (activeWorkspace.surface) {
+          setSurfacePlayhead(activeWorkspace.surface, activeWorkspace.currentOffset / safeDuration, false);
+        }
+        workspaceTime.textContent = `${formatSeconds(activeWorkspace.currentOffset)} / ${formatSeconds(safeDuration)}`;
+        updateWorkspaceSeek(activeWorkspace.currentOffset, safeDuration);
       }
 
       function collectPlaybackTargets(midiPath, primaryTarget) {
@@ -1152,6 +1253,9 @@
         playback.targets.forEach((target) => {
           if (target.surface) setSurfacePlayhead(target.surface, finished ? 1 : 0, false);
         });
+        if (activeWorkspace && playback.midiPath === activeWorkspace.midiPath) {
+          updateWorkspacePosition(finished ? playback.duration : activeWorkspace.currentOffset || 0, playback.duration);
+        }
 
         activeMidiPlayback = null;
       }
@@ -1165,14 +1269,21 @@
           if (!activeMidiPlayback) return;
 
           const elapsed = Math.max(0, midiAudioContext.currentTime - activeMidiPlayback.startTime);
+          const absoluteTime = activeMidiPlayback.duration
+            ? Math.min(activeMidiPlayback.startOffset + elapsed, activeMidiPlayback.duration)
+            : 0;
           const ratio = activeMidiPlayback.duration
-            ? Math.min(elapsed / activeMidiPlayback.duration, 1)
+            ? Math.min(absoluteTime / activeMidiPlayback.duration, 1)
             : 0;
 
           activeMidiPlayback.targets.forEach((target) => {
             if (target.surface) setSurfacePlayhead(target.surface, ratio, true);
           });
-          updateTimeDisplays(activeMidiPlayback.targets, Math.min(elapsed, activeMidiPlayback.duration), activeMidiPlayback.duration);
+          updateTimeDisplays(activeMidiPlayback.targets, absoluteTime, activeMidiPlayback.duration);
+          if (activeWorkspace && activeMidiPlayback.midiPath === activeWorkspace.midiPath) {
+            updateWorkspaceSeek(absoluteTime, activeMidiPlayback.duration);
+            activeWorkspace.currentOffset = absoluteTime;
+          }
 
           if (ratio < 1) {
             activeMidiPlayback.animationFrameId = window.requestAnimationFrame(tick);
@@ -1195,6 +1306,14 @@
             throw new Error("No playable notes found");
           }
 
+          const startOffset = Math.max(
+            0,
+            Math.min(
+              primaryTarget.currentOffset ?? (activeWorkspace && activeWorkspace.midiPath === midiPath ? activeWorkspace.currentOffset : 0) ?? 0,
+              parsed.duration
+            )
+          );
+
           if (!midiAudioContext) {
             midiAudioContext = new (window.AudioContext || window.webkitAudioContext)();
           }
@@ -1202,7 +1321,7 @@
 
           const masterGain = midiAudioContext.createGain();
           const compressor = midiAudioContext.createDynamicsCompressor();
-          masterGain.gain.value = 0.26;
+          masterGain.gain.value = BASE_MIDI_GAIN * midiVolumeMultiplier;
           compressor.threshold.value = -24;
           compressor.knee.value = 18;
           compressor.ratio.value = 8;
@@ -1215,30 +1334,38 @@
           const startTime = midiAudioContext.currentTime + 0.05;
 
           parsed.events.forEach((event) => {
+            const eventEnd = event.start + event.duration;
+            if (eventEnd <= startOffset) return;
+
+            const scheduledStart = Math.max(0, event.start - startOffset);
+            const remainingDuration = Math.max(0.05, event.duration - Math.max(0, startOffset - event.start));
             const oscillator = midiAudioContext.createOscillator();
             const gainNode = midiAudioContext.createGain();
 
             oscillator.type = event.noteNumber < 58 ? "triangle" : "sine";
-            oscillator.frequency.setValueAtTime(event.frequency, startTime + event.start);
+            oscillator.frequency.setValueAtTime(event.frequency, startTime + scheduledStart);
 
-            gainNode.gain.setValueAtTime(0.0001, startTime + event.start);
-            gainNode.gain.exponentialRampToValueAtTime(event.velocity * 0.28, startTime + event.start + 0.02);
-            gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + event.start + event.duration);
+            gainNode.gain.setValueAtTime(0.0001, startTime + scheduledStart);
+            gainNode.gain.exponentialRampToValueAtTime(event.velocity * 0.28, startTime + scheduledStart + 0.02);
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + scheduledStart + remainingDuration);
 
             oscillator.connect(gainNode);
             gainNode.connect(masterGain);
-            oscillator.start(startTime + event.start);
-            oscillator.stop(startTime + event.start + event.duration + 0.03);
+            oscillator.start(startTime + scheduledStart);
+            oscillator.stop(startTime + scheduledStart + remainingDuration + 0.03);
 
             nodes.push(oscillator, gainNode);
           });
 
           setButtonState(targets, true);
           setStatusMessage(targets.map((target) => target.statusEl), "Playing");
-          updateTimeDisplays(targets, 0, parsed.duration);
+          updateTimeDisplays(targets, startOffset, parsed.duration);
           targets.forEach((target) => {
-            if (target.surface) setSurfacePlayhead(target.surface, 0, false);
+            if (target.surface) setSurfacePlayhead(target.surface, startOffset / Math.max(parsed.duration, 0.001), false);
           });
+          if (activeWorkspace && activeWorkspace.midiPath === midiPath) {
+            updateWorkspacePosition(startOffset, parsed.duration);
+          }
 
           activeMidiPlayback = {
             midiPath,
@@ -1247,10 +1374,11 @@
             compressor,
             timeoutId: window.setTimeout(() => {
               stopMidiPlayback({ finished: true });
-            }, Math.ceil((parsed.duration + 0.25) * 1000)),
+            }, Math.ceil((Math.max(0, parsed.duration - startOffset) + 0.25) * 1000)),
             animationFrameId: null,
             startTime,
             duration: parsed.duration,
+            startOffset,
             targets,
           };
 
@@ -1285,6 +1413,7 @@
         workspaceStatus.textContent = "Loading workspace...";
         workspacePlayButton.disabled = true;
         workspaceStopButton.disabled = true;
+        workspaceSeek.disabled = true;
         workspaceRollHost.innerHTML = '<div class="midi-roll-placeholder">Loading piano roll workspace...</div>';
 
         try {
@@ -1296,11 +1425,14 @@
           workspaceTime.textContent = `0.0 / ${formatSeconds(parsed.duration)}`;
           workspaceMeta.textContent = midiMetaLabel(parsed);
           workspaceStatus.textContent = "Ready";
+          updateWorkspaceSeek(0, parsed.duration);
 
           activeWorkspace = {
             songTitle,
             midiPath,
             surface,
+            duration: parsed.duration,
+            currentOffset: 0,
             playButton: workspacePlayButton,
             stopButton: workspaceStopButton,
             statusEl: workspaceStatus,
@@ -1309,12 +1441,15 @@
 
           workspacePlayButton.disabled = false;
           workspaceStopButton.disabled = true;
+          workspaceSeek.disabled = false;
         } catch (error) {
           activeWorkspace = null;
           workspaceMeta.textContent = "Unavailable";
           workspaceStatus.textContent = window.location.protocol === "file:"
             ? "Serve this page over HTTP to enable the MIDI workspace."
             : `Unable to load workspace: ${error.message}`;
+          updateWorkspaceSeek(0, 0);
+          workspaceSeek.disabled = true;
           workspaceRollHost.innerHTML = `<div class="midi-roll-placeholder">${workspaceStatus.textContent}</div>`;
         }
       }
@@ -1338,6 +1473,22 @@
       workspaceStopButton.addEventListener("click", () => {
         stopMidiPlayback();
       });
+      workspaceSeek.addEventListener("input", () => {
+        if (!activeWorkspace) return;
+        updateWorkspacePosition(Number(workspaceSeek.value), activeWorkspace.duration || 0);
+      });
+      workspaceSeek.addEventListener("change", () => {
+        if (!activeWorkspace) return;
+        if (activeMidiPlayback && activeMidiPlayback.midiPath === activeWorkspace.midiPath) {
+          playMidiFile(activeWorkspace.midiPath, activeWorkspace);
+        }
+      });
+      workspaceVolume.addEventListener("input", () => {
+        midiVolumeMultiplier = Number(workspaceVolume.value) / 100;
+        updateVolumeLabel();
+        applyMidiVolume();
+      });
+      updateVolumeLabel();
 
       function makeMidiCell(midiPath, songTitle) {
         const td = document.createElement("td");
@@ -1362,17 +1513,17 @@
 
         const stopButton = document.createElement("button");
         stopButton.type = "button";
-        stopButton.className = "btn btn-sm btn-outline-light";
+        stopButton.className = "btn btn-sm btn-outline-secondary";
         stopButton.textContent = "Stop";
         stopButton.disabled = true;
 
         const workspaceButton = document.createElement("button");
         workspaceButton.type = "button";
-        workspaceButton.className = "btn btn-sm btn-outline-info";
+        workspaceButton.className = "btn btn-sm btn-outline-primary";
         workspaceButton.textContent = "Open workspace";
 
         const downloadLink = document.createElement("a");
-        downloadLink.className = "btn btn-sm btn-outline-light";
+        downloadLink.className = "btn btn-sm btn-outline-secondary";
         downloadLink.href = audioSrc(midiPath);
         downloadLink.textContent = "Download";
         downloadLink.setAttribute("download", "");
@@ -1484,13 +1635,18 @@
         <h3 id="midi-workspace-title">MIDI Workspace</h3>
         <p>Interactive piano-roll playback for the predicted vocal MIDI and chord sequence.</p>
       </div>
-      <button type="button" class="btn btn-sm btn-outline-light" id="midi-workspace-close">Close</button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" id="midi-workspace-close">Close</button>
     </div>
     <div class="midi-workspace-toolbar">
       <div class="midi-workspace-controls">
         <button type="button" class="btn btn-sm btn-primary" id="midi-workspace-play">Play</button>
-        <button type="button" class="btn btn-sm btn-outline-light" id="midi-workspace-stop" disabled>Stop</button>
-        <a class="btn btn-sm btn-outline-light" id="midi-workspace-download" href="#" download>Download MIDI</a>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="midi-workspace-stop" disabled>Stop</button>
+        <a class="btn btn-sm btn-outline-secondary" id="midi-workspace-download" href="#" download>Download MIDI</a>
+        <label class="midi-volume-control" for="midi-workspace-volume">
+          <span>Volume</span>
+          <input type="range" id="midi-workspace-volume" min="40" max="220" step="1" value="125">
+          <span id="midi-workspace-volume-value">125%</span>
+        </label>
       </div>
       <div class="midi-workspace-inspector">
         <span class="midi-demo-chip" id="midi-workspace-time">0.0 / 0.0</span>
@@ -1504,7 +1660,12 @@
     </div>
     <div class="midi-workspace-footer">
       <span id="midi-workspace-status">Ready</span>
-      <span>Browser synth preview with animated piano roll</span>
+      <div class="midi-seek-strip">
+        <span class="midi-seek-time" id="midi-workspace-seek-current">0.0</span>
+        <input class="midi-seek-range" type="range" id="midi-workspace-seek" min="0" max="0" step="0.01" value="0" disabled>
+        <span class="midi-seek-time" id="midi-workspace-seek-total">0.0</span>
+      </div>
+      <span class="midi-seek-caption">WaveRoll-style preview</span>
     </div>
   </div>
 </div>
