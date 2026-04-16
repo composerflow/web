@@ -136,41 +136,37 @@
     .midi-demo-card midi-visualizer .piano-roll-visualizer {
       width: 100%;
       height: 100%;
-      overflow-x: auto;
+      overflow-x: scroll;
       overflow-y: hidden;
+      scrollbar-width: auto;
+      scrollbar-color: #6366f1 #e2e8f0;
     }
 
     .midi-demo-card midi-visualizer .piano-roll-visualizer::-webkit-scrollbar {
-      height: 10px;
+      height: 14px;
+      background: #e2e8f0;
     }
     .midi-demo-card midi-visualizer .piano-roll-visualizer::-webkit-scrollbar-thumb {
-      background: #94a3b8;
+      background: #6366f1;
       border-radius: 10px;
+      border: 2px solid #e2e8f0;
+    }
+    .midi-demo-card midi-visualizer .piano-roll-visualizer::-webkit-scrollbar-thumb:hover {
+      background: #4f46e5;
     }
 
-    /* Base note styling: chord = indigo */
+    /* Note colors are applied per-rect from JS via the `fill` attribute.
+       We keep CSS out of specificity wars, and just animate the active ring. */
     .midi-demo-card midi-visualizer svg rect.note {
-      fill: #6366f1 !important;
-      opacity: 0.85;
+      opacity: 0.9;
     }
-
-    /* Melody = red */
-    .midi-demo-card midi-visualizer svg rect.note[data-role="melody"] {
-      fill: #e0453e !important;
-    }
-
-    /* Currently-playing note — very emphasized, animated glow */
-    .midi-demo-card midi-visualizer svg rect.note.active {
-      fill: #facc15 !important;
-      opacity: 1 !important;
-      stroke: #7c2d12 !important;
-      stroke-width: 2 !important;
-      filter: drop-shadow(0 0 6px rgba(250, 204, 21, 1));
+    .midi-demo-card midi-visualizer svg rect.note.playing-now {
+      filter: drop-shadow(0 0 6px rgba(250, 204, 21, 0.95));
       animation: midi-note-pulse 0.6s ease-in-out infinite alternate;
     }
 
     @keyframes midi-note-pulse {
-      from { filter: drop-shadow(0 0 4px rgba(250, 204, 21, 0.75)); }
+      from { filter: drop-shadow(0 0 3px rgba(250, 204, 21, 0.7)); }
       to   { filter: drop-shadow(0 0 10px rgba(250, 204, 21, 1)); }
     }
 
@@ -208,8 +204,12 @@
     }
 
     .midi-demo-card midi-player::part(seek-bar) {
-      height: 14px;
+      height: 18px;
       accent-color: #2563eb;
+      cursor: grab;
+    }
+    .midi-demo-card midi-player::part(seek-bar):active {
+      cursor: grabbing;
     }
 
     .midi-demo-card midi-player::part(time) {
@@ -446,8 +446,13 @@
 
       let midiCellCounter = 0;
 
-      // Assign melody/chord role per note rect using per-instrument avg pitch.
-      // Magenta renders each note rect with data-instrument, data-pitch, data-index.
+      const MELODY_COLOR = "#e0453e";
+      const CHORD_COLOR = "#6366f1";
+      const ACTIVE_COLOR = "#facc15";
+
+      // Paint each note rect directly (bypass CSS specificity against the
+      // library's inline `fill` attribute). Melody vs chord is inferred from
+      // per-instrument avg pitch (highest-avg instrument is melody).
       function tagNoteRoles(visualizer) {
         const ns = visualizer.noteSequence;
         const rects = visualizer.querySelectorAll("svg rect.note");
@@ -472,7 +477,6 @@
           });
         }
 
-        // Median pitch used as fallback for single-track files
         const allPitches = ns.notes.map((n) => n.pitch).sort((a, b) => a - b);
         const medianPitch = allPitches[Math.floor(allPitches.length / 2)] ?? 60;
 
@@ -482,8 +486,13 @@
           const isMelody = melodyInstrument !== null
             ? inst === melodyInstrument
             : pitch > medianPitch;
-          if (isMelody) rect.dataset.role = "melody";
-          else rect.dataset.role = "chord";
+          const role = isMelody ? "melody" : "chord";
+          rect.dataset.role = role;
+          // Remember base color on the rect itself so we can restore after
+          // the library toggles the `fill` attribute for the active state.
+          const baseColor = isMelody ? MELODY_COLOR : CHORD_COLOR;
+          rect.dataset.baseFill = baseColor;
+          rect.setAttribute("fill", baseColor);
         });
       }
 
@@ -537,34 +546,122 @@
           }
         }
 
-        visualizer.addEventListener("load", () => {
-          tagNoteRoles(visualizer);
+        // The <midi-visualizer> element never fires a "load" event; only
+        // <midi-player> does. Magenta also re-renders the SVG whenever the
+        // player forces a reload (on play start if noteSequences differ).
+        // So we:
+        //   (a) attach scroll/seek listeners ONCE to the wrapper (persists
+        //       across reloads — Magenta only clears its innerHTML),
+        //   (b) re-run tagNoteRoles every time the rect count changes.
+        let wrapperListenersAttached = false;
+        let lastRectCount = 0;
 
-          const svg = visualizer.querySelector("svg");
+        function attachWrapperListeners() {
           const sc = getScrollEl();
+          if (!sc || wrapperListenersAttached) return;
+          wrapperListenersAttached = true;
 
-          // Click-to-seek (accounts for horizontal scroll)
-          if (svg) {
-            svg.addEventListener("click", (event) => {
-              const ns = visualizer.noteSequence;
-              if (!ns || !ns.totalTime) return;
-              const svgRect = svg.getBoundingClientRect();
-              const xInSvg = event.clientX - svgRect.left;
-              const fraction = Math.max(0, Math.min(1, xInSvg / svgRect.width));
-              player.currentTime = fraction * ns.totalTime;
+          // Mouse wheel pans horizontally
+          sc.addEventListener("wheel", (event) => {
+            const dx = Math.abs(event.deltaX);
+            const dy = Math.abs(event.deltaY);
+            if (dy > dx) {
+              sc.scrollLeft += event.deltaY;
+              event.preventDefault();
+            }
+          }, { passive: false });
+
+          // Unified pointer handling: drag to pan, click to seek.
+          // Distinguish them by movement distance.
+          let pointerDown = false;
+          let pointerStartX = 0;
+          let pointerStartY = 0;
+          let dragStartScroll = 0;
+          let moved = false;
+          const DRAG_THRESHOLD = 4;
+
+          sc.addEventListener("pointerdown", (event) => {
+            if (event.button !== 0) return;
+            pointerDown = true;
+            moved = false;
+            pointerStartX = event.clientX;
+            pointerStartY = event.clientY;
+            dragStartScroll = sc.scrollLeft;
+          });
+          sc.addEventListener("pointermove", (event) => {
+            if (!pointerDown) return;
+            const dx = event.clientX - pointerStartX;
+            const dy = event.clientY - pointerStartY;
+            if (!moved && Math.hypot(dx, dy) > DRAG_THRESHOLD) {
+              moved = true;
+              sc.setPointerCapture(event.pointerId);
+              sc.style.cursor = "grabbing";
+            }
+            if (moved) {
+              sc.scrollLeft = dragStartScroll - dx;
+            }
+          });
+          function finishPointer(event) {
+            if (!pointerDown) return;
+            pointerDown = false;
+            sc.style.cursor = "";
+            if (moved) return;
+            // Treat as a click-to-seek (no drag occurred)
+            const ns = visualizer.noteSequence;
+            const svg = sc.querySelector("svg");
+            if (!ns || !ns.totalTime || !svg) return;
+            const svgRect = svg.getBoundingClientRect();
+            const fraction = Math.max(0, Math.min(1,
+              (event.clientX - svgRect.left) / svgRect.width));
+            player.currentTime = fraction * ns.totalTime;
+          }
+          sc.addEventListener("pointerup", finishPointer);
+          sc.addEventListener("pointercancel", () => { pointerDown = false; moved = false; sc.style.cursor = ""; });
+        }
+
+        function refreshVisualizerHooks() {
+          const rects = visualizer.querySelectorAll("svg rect.note");
+          if (!rects.length) return;
+          attachWrapperListeners();
+          if (rects.length !== lastRectCount) {
+            lastRectCount = rects.length;
+            tagNoteRoles(visualizer);
+          }
+        }
+
+        const mo = new MutationObserver(refreshVisualizerHooks);
+        mo.observe(visualizer, { childList: true, subtree: true });
+        refreshVisualizerHooks();
+
+        // The library forwards `note`/`start`/`stop` from player → visualizer.
+        // After the library's own redraw runs, we override the active rect(s)
+        // so the emphasis is unmistakable and uses our palette.
+        const activeRects = new Set();
+        function clearActiveRects() {
+          activeRects.forEach((rect) => {
+            rect.classList.remove("playing-now");
+            const base = rect.dataset.baseFill;
+            if (base) rect.setAttribute("fill", base);
+          });
+          activeRects.clear();
+        }
+        visualizer.addEventListener("note", (event) => {
+          const note = event.detail && event.detail.note;
+          if (!note) return;
+          // Wait one frame so the library's `redraw` has already run.
+          requestAnimationFrame(() => {
+            clearActiveRects();
+            const svg = visualizer.querySelector("svg");
+            if (!svg) return;
+            const rects = svg.querySelectorAll("rect.active");
+            rects.forEach((rect) => {
+              rect.setAttribute("fill", ACTIVE_COLOR);
+              rect.classList.add("playing-now");
+              activeRects.add(rect);
             });
-          }
-
-          // Shift-less horizontal wheel scroll on the piano roll
-          if (sc) {
-            sc.addEventListener("wheel", (event) => {
-              if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
-                sc.scrollLeft += event.deltaY;
-                event.preventDefault();
-              }
-            }, { passive: false });
-          }
+          });
         });
+        visualizer.addEventListener("stop", clearActiveRects);
 
         player.addEventListener("start", () => {
           viewport.classList.add("playing");
@@ -578,6 +675,7 @@
         player.addEventListener("stop", () => {
           viewport.classList.remove("playing");
           cancelAnimationFrame(rafId);
+          clearActiveRects();
         });
 
         const legend = document.createElement("div");
