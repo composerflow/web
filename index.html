@@ -114,72 +114,113 @@
       gap: 6px;
     }
 
-    .midi-demo-card midi-visualizer {
-      display: block;
+    /* Piano-roll viewport wraps visualizer + playhead overlay */
+    .midi-roll-viewport {
+      position: relative;
       width: 100%;
-      height: 160px;
+      height: 170px;
       border: 1px solid #e2e8f0;
       border-radius: 6px;
       background: #f8fafc;
       overflow: hidden;
+    }
+
+    .midi-demo-card midi-visualizer {
+      display: block;
+      width: 100%;
+      height: 100%;
       cursor: crosshair;
     }
 
+    /* The library slots a .piano-roll-visualizer wrapper; let it scroll horizontally */
     .midi-demo-card midi-visualizer .piano-roll-visualizer {
       width: 100%;
       height: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
     }
 
-    .midi-demo-card midi-visualizer svg {
-      height: 100%;
+    .midi-demo-card midi-visualizer .piano-roll-visualizer::-webkit-scrollbar {
+      height: 10px;
+    }
+    .midi-demo-card midi-visualizer .piano-roll-visualizer::-webkit-scrollbar-thumb {
+      background: #94a3b8;
+      border-radius: 10px;
     }
 
-    /* Default = chord */
+    /* Base note styling: chord = indigo */
     .midi-demo-card midi-visualizer svg rect.note {
       fill: #6366f1 !important;
-      opacity: 0.7;
-      transition: fill 60ms ease, opacity 120ms ease;
-    }
-
-    .midi-demo-card midi-visualizer svg rect.note[data-role="melody"] {
-      fill: #e0453e !important;
       opacity: 0.85;
     }
 
-    /* While playing, dim non-active notes so the active one stands out */
-    .midi-demo-card midi-visualizer.playing svg rect.note {
-      opacity: 0.22;
+    /* Melody = red */
+    .midi-demo-card midi-visualizer svg rect.note[data-role="melody"] {
+      fill: #e0453e !important;
     }
 
-    /* The currently-playing note — emphasized (glow + stroke + overrides role color) */
+    /* Currently-playing note — very emphasized, animated glow */
     .midi-demo-card midi-visualizer svg rect.note.active {
-      fill: #f59e0b !important;
+      fill: #facc15 !important;
       opacity: 1 !important;
-      stroke: #7c2d12;
-      stroke-width: 1.2;
-      filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.95));
+      stroke: #7c2d12 !important;
+      stroke-width: 2 !important;
+      filter: drop-shadow(0 0 6px rgba(250, 204, 21, 1));
+      animation: midi-note-pulse 0.6s ease-in-out infinite alternate;
+    }
+
+    @keyframes midi-note-pulse {
+      from { filter: drop-shadow(0 0 4px rgba(250, 204, 21, 0.75)); }
+      to   { filter: drop-shadow(0 0 10px rgba(250, 204, 21, 1)); }
+    }
+
+    /* Vertical playhead line — follows playback time */
+    .midi-roll-playhead {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      margin-left: -1px;
+      background: linear-gradient(180deg, #f59e0b 0%, #dc2626 100%);
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.9);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 120ms ease;
+      z-index: 5;
+    }
+
+    .midi-roll-viewport.playing .midi-roll-playhead {
+      opacity: 1;
     }
 
     .midi-demo-card midi-player {
       display: block;
       width: 100%;
+      min-height: 52px;
     }
 
-    /* Bigger seek bar so timing is easier to scrub */
+    /* Bigger, more-visible seek bar so scrubbing is easy */
     .midi-demo-card midi-player::part(control-panel) {
-      border-radius: 8px;
-      background: #f1f5f9;
-      height: 44px;
+      border-radius: 10px;
+      background: #eef2ff;
+      height: 52px;
+      padding: 0 12px;
     }
 
     .midi-demo-card midi-player::part(seek-bar) {
-      height: 10px;
+      height: 14px;
       accent-color: #2563eb;
     }
 
     .midi-demo-card midi-player::part(time) {
       font-variant-numeric: tabular-nums;
       font-size: 13px;
+      min-width: 84px;
+    }
+
+    .midi-demo-card midi-player::part(play-button) {
+      width: 40px;
+      height: 40px;
     }
 
     .midi-demo-legend {
@@ -450,42 +491,93 @@
         const src = audioSrc(midiPath);
         const vizId = `midi-viz-${++midiCellCounter}`;
 
+        const viewport = document.createElement("div");
+        viewport.className = "midi-roll-viewport";
+
         const visualizer = document.createElement("midi-visualizer");
         visualizer.setAttribute("type", "piano-roll");
         visualizer.setAttribute("src", src);
         visualizer.id = vizId;
+
+        const playhead = document.createElement("div");
+        playhead.className = "midi-roll-playhead";
+
+        viewport.appendChild(visualizer);
+        viewport.appendChild(playhead);
 
         const player = document.createElement("midi-player");
         player.setAttribute("src", src);
         player.setAttribute("sound-font", "");
         player.setAttribute("visualizer", `#${vizId}`);
 
+        // Horizontal scroll container (inside the visualizer's light DOM, created by Magenta).
+        let scrollEl = null;
+        let rafId = null;
+
+        function getScrollEl() {
+          if (scrollEl) return scrollEl;
+          scrollEl = visualizer.querySelector(".piano-roll-visualizer");
+          return scrollEl;
+        }
+
+        function updatePlayhead() {
+          const ns = visualizer.noteSequence;
+          const duration = ns && ns.totalTime;
+          const svg = visualizer.querySelector("svg");
+          const sc = getScrollEl();
+          if (duration && svg && sc) {
+            const svgWidth = svg.getBoundingClientRect().width;
+            const fraction = Math.max(0, Math.min(1, (player.currentTime || 0) / duration));
+            const xInSvg = fraction * svgWidth;
+            const xOnScreen = xInSvg - sc.scrollLeft;
+            playhead.style.left = `${xOnScreen}px`;
+          }
+          if (viewport.classList.contains("playing")) {
+            rafId = requestAnimationFrame(updatePlayhead);
+          }
+        }
+
         visualizer.addEventListener("load", () => {
           tagNoteRoles(visualizer);
 
-          // Click anywhere on the piano roll to seek
           const svg = visualizer.querySelector("svg");
+          const sc = getScrollEl();
+
+          // Click-to-seek (accounts for horizontal scroll)
           if (svg) {
             svg.addEventListener("click", (event) => {
               const ns = visualizer.noteSequence;
               if (!ns || !ns.totalTime) return;
-              const rect = svg.getBoundingClientRect();
-              const x = event.clientX - rect.left;
-              const fraction = Math.max(0, Math.min(1, x / rect.width));
+              const svgRect = svg.getBoundingClientRect();
+              const xInSvg = event.clientX - svgRect.left;
+              const fraction = Math.max(0, Math.min(1, xInSvg / svgRect.width));
               player.currentTime = fraction * ns.totalTime;
             });
+          }
+
+          // Shift-less horizontal wheel scroll on the piano roll
+          if (sc) {
+            sc.addEventListener("wheel", (event) => {
+              if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+                sc.scrollLeft += event.deltaY;
+                event.preventDefault();
+              }
+            }, { passive: false });
           }
         });
 
         player.addEventListener("start", () => {
-          visualizer.classList.add("playing");
+          viewport.classList.add("playing");
           document.querySelectorAll("audio").forEach((a) => a.pause());
           document.querySelectorAll("midi-player").forEach((p) => {
             if (p !== player) p.stop();
           });
+          cancelAnimationFrame(rafId);
+          rafId = requestAnimationFrame(updatePlayhead);
         });
         player.addEventListener("stop", () => {
-          visualizer.classList.remove("playing");
+          viewport.classList.remove("playing");
+          cancelAnimationFrame(rafId);
         });
 
         const legend = document.createElement("div");
@@ -493,7 +585,7 @@
         legend.innerHTML = `
           <span><i style="background:#e0453e"></i>Melody</span>
           <span><i style="background:#6366f1"></i>Chord</span>
-          <span><i style="background:#f59e0b"></i>Playing</span>
+          <span><i style="background:#facc15;border:1px solid #7c2d12"></i>Playing</span>
         `;
 
         const footer = document.createElement("div");
@@ -506,7 +598,7 @@
         footer.appendChild(downloadLink);
 
         card.appendChild(legend);
-        card.appendChild(visualizer);
+        card.appendChild(viewport);
         card.appendChild(player);
         card.appendChild(footer);
 
