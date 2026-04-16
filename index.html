@@ -392,8 +392,11 @@
         return pianoSynthPromise;
       }
 
-      // Only one custom player plays at a time
+      // Only one custom player plays at a time. We also track the currently
+      // scheduled Tone.Part so we can dispose it when switching players, so
+      // Transport doesn't accidentally fire the old player's events.
       let activePlayerController = null;
+      let activeSchedulingPart = null;
 
       function pitchToName(p) {
         const names = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
@@ -569,12 +572,20 @@
         card.appendChild(footer);
 
         // ===== Playback state =====
+        // Time is driven by Tone.Transport. The rAF loop samples
+        // Tone.Transport.seconds so visuals and audio share a clock.
         let currentTime = 0;
         let playing = false;
-        let anchorPerf = 0; // performance.now()/1000 at currentTime=0
-        let scheduledEvents = []; // Tone.js event ids
         let rafId = null;
         const activeNotes = new Set();
+
+        // Pre-build the event list — Tone.Part uses these (cloned per play)
+        const partEvents = noteEntries.map((e) => ({
+          time: e.startTime,
+          note: pitchToName(e.pitch),
+          duration: Math.max(0.01, e.durationSec),
+          velocity: e.velocity,
+        }));
 
         function clearHighlights() {
           activeNotes.forEach((e) => {
@@ -606,17 +617,22 @@
           }
         }
 
+        function disposeOwnPart() {
+          if (activeSchedulingPart && activeSchedulingPart._ownerController === controller) {
+            try { activeSchedulingPart.dispose(); } catch (_) {}
+            activeSchedulingPart = null;
+          }
+        }
+
         function tick() {
           if (!playing) return;
-          const nowSec = performance.now() / 1000;
-          currentTime = nowSec - anchorPerf;
+          currentTime = Tone.Transport.seconds;
           if (currentTime >= totalTime) {
             currentTime = totalTime;
             updateUI();
             stop(true);
             return;
           }
-          // Update highlights
           const nextActive = new Set();
           noteEntries.forEach((e) => {
             if (currentTime >= e.startTime && currentTime <= e.endTime) {
@@ -644,38 +660,42 @@
 
         async function play() {
           if (playing) return;
+
+          // Hand off the Transport from any previous player. We always dispose
+          // the previously scheduled Part before we schedule ours so Transport
+          // doesn't fire both sets of events at once.
           if (activePlayerController && activePlayerController !== controller) {
             activePlayerController.stop();
           }
+          if (activeSchedulingPart) {
+            try { activeSchedulingPart.dispose(); } catch (_) {}
+            activeSchedulingPart = null;
+            Tone.Transport.stop();
+            Tone.Transport.cancel();
+          }
           activePlayerController = controller;
-          // Pause any native <audio> elements on the page
           document.querySelectorAll("audio").forEach((a) => a.pause());
 
           playBtn.disabled = true;
           const synth = await getPianoSynth();
           playBtn.disabled = false;
-          if (!playing === false) { /* may have been cancelled */ }
+
+          // Build a fresh Part for this playback. Events are scheduled on the
+          // Transport's 0-based timeline; Transport.start(time, offset) then
+          // drives both audio and visuals off the same clock.
+          const part = new Tone.Part((time, ev) => {
+            synth.triggerAttackRelease(ev.note, ev.duration, time, ev.velocity);
+          }, partEvents);
+          part._ownerController = controller;
+          part.start(0);
+          activeSchedulingPart = part;
 
           playing = true;
-          anchorPerf = performance.now() / 1000 - currentTime;
           playBtn.innerHTML = '<i class="bi bi-pause-fill"></i>';
           viewport.classList.add("playing");
 
-          // Schedule all upcoming notes relative to the audio clock
-          const toneNow = Tone.now();
-          scheduledEvents = [];
-          noteEntries.forEach((e) => {
-            if (e.endTime <= currentTime) return;
-            const startOffset = Math.max(0, e.startTime - currentTime);
-            const clippedDuration = e.endTime - Math.max(e.startTime, currentTime);
-            if (clippedDuration <= 0) return;
-            synth.triggerAttackRelease(
-              pitchToName(e.pitch),
-              clippedDuration,
-              toneNow + startOffset,
-              e.velocity
-            );
-          });
+          Tone.Transport.seconds = currentTime;
+          Tone.Transport.start();
 
           cancelAnimationFrame(rafId);
           rafId = requestAnimationFrame(tick);
@@ -686,10 +706,12 @@
           playing = false;
           viewport.classList.remove("playing");
           cancelAnimationFrame(rafId);
-          currentTime = performance.now() / 1000 - anchorPerf;
+          Tone.Transport.pause();
+          currentTime = Tone.Transport.seconds;
           if (currentTime > totalTime) currentTime = totalTime;
-          // Silence any in-flight notes
-          if (pianoSynthPromise) pianoSynthPromise.then((s) => s.releaseAll());
+          // Dispose the part so no buffered lookahead events fire after pause.
+          disposeOwnPart();
+          Tone.Transport.cancel();
           clearHighlights();
           playBtn.innerHTML = '<i class="bi bi-play-fill"></i>';
           updateUI();
@@ -700,23 +722,23 @@
             playing = false;
             viewport.classList.remove("playing");
             cancelAnimationFrame(rafId);
-            if (pianoSynthPromise) pianoSynthPromise.then((s) => s.releaseAll());
+            Tone.Transport.stop();
+            disposeOwnPart();
+            Tone.Transport.cancel();
             clearHighlights();
             playBtn.innerHTML = '<i class="bi bi-play-fill"></i>';
           }
-          if (finished) currentTime = 0;
+          if (finished) {
+            currentTime = 0;
+            Tone.Transport.seconds = 0;
+          }
           updateUI();
         }
 
         function seek(newTime) {
           newTime = Math.max(0, Math.min(newTime, totalTime));
           const wasPlaying = playing;
-          if (wasPlaying) {
-            // Cancel scheduled future notes
-            if (pianoSynthPromise) pianoSynthPromise.then((s) => s.releaseAll());
-            playing = false;
-            cancelAnimationFrame(rafId);
-          }
+          if (wasPlaying) pause();
           currentTime = newTime;
           clearHighlights();
           updateUI();
