@@ -92,8 +92,8 @@
 
 <body class="bg-light">
 <script>
-  (function enableDragScroll(containerId) {
-    const el = document.getElementById(containerId);
+  document.addEventListener("DOMContentLoaded", () => {
+    const el = document.getElementById("audio-table-wrap");
     if (!el) return;
 
     let isDown = false;
@@ -101,7 +101,6 @@
     let scrollLeft = 0;
 
     el.addEventListener("mousedown", (e) => {
-      // Don't block interacting with audio controls/buttons
       if (e.target.closest("audio, button, a, input, select, textarea, label")) return;
 
       isDown = true;
@@ -124,10 +123,10 @@
     el.addEventListener("mousemove", (e) => {
       if (!isDown) return;
       const x = e.pageX - el.offsetLeft;
-      const walk = (x - startX);
+      const walk = x - startX;
       el.scrollLeft = scrollLeft - walk;
     });
-  })("audio-table-wrap");
+  });
 </script>
 
 <div class="container py-4">
@@ -148,166 +147,150 @@
 </div>
 
 <!-- =======================
-     Audio Samples (4 × 7 table: Vocal + 6 prompts)
+     Audio Samples (4 × 7 table: Vocal + FastSAG + AnyAccomp + 4 MIDI-SAG prompts)
      ======================= -->
 <div class="container my-4">
-
   <section id="audio-samples" style="margin: 32px 0;">
-    <h2 style="margin: 0 0 10px;">1. MIDI-SAG w/o gt vocal MIDI</h2>
+    <h2 style="margin: 0 0 10px;">1. Vocal-Conditioned Accompaniment Comparison</h2>
     <p style="margin: 0 0 18px; opacity: 0.8; line-height: 1.4;">
-      This section correspond to the settings shown in Figure 2 (b), where we extract vocal MIDI and beat from raw vocal audio. Each row is one clean vocal track from the MUSDB test set. The first column is the original vocal, and the next 6 columns are mixes with different
-      backing prompts.
+      Each row uses the same vocal input. The columns compare the vocal track, FastSAG, AnyAccomp, and four MIDI-SAG outputs generated with different accompaniment text prompts.
     </p>
 
-  <div id="audio-table-wrap" class="table-responsive drag-scroll">
-    <table id="audio-table" class="table table-sm table-bordered align-middle mb-0">
+    <div id="audio-table-wrap" class="table-responsive drag-scroll">
+      <table id="audio-table" class="table table-sm table-bordered align-middle mb-0">
         <thead></thead>
         <tbody></tbody>
       </table>
-  </div>
+    </div>
 
+    <script>
+      const COMPARISON_COLUMNS = [
+        { label: "Vocal", desc: "Input vocal audio used for accompaniment generation" },
+        { label: "FastSAG", desc: "Output from demo_website_selected/sliced_audio_fastsag_output" },
+        { label: "AnyAccomp", desc: "Output from demo_website_selected/sliced_audio_AnyAccomp_output" },
+        { label: "MIDI-SAG P1", desc: "acoustic guitar, country music" },
+        { label: "MIDI-SAG P2", desc: "jazzy piano, with an exciting vibe, trumpet, drums" },
+        { label: "MIDI-SAG P3", desc: "energetic pop rock with electric guitars, bass, and upbeat drums" },
+        { label: "MIDI-SAG P4", desc: "metal band" },
+      ];
 
-  <script>
-    // ✅ Change this to your folder path (relative to the HTML file).
-    // If the HTML is INSIDE the folder, use: const AUDIO_BASE = "./";
-    const AUDIO_BASE = "./MUSDB_demo_116000text_7.0_con_1.5_rhythm_melody_chord_0.3_500/";
+      const COMPARISON_ROWS = [
+        {
+          title: "Al James - Schoolboy Facination",
+          vocal: "./demo_website_selected/experiment2/Al James - Schoolboy Facination/vad_audio/vocals.wav",
+          fastsag: "./demo_website_selected/sliced_audio_fastsag_output/sliced_audio/AI_vocals.wav",
+          anyaccomp: "./demo_website_selected/sliced_audio_AnyAccomp_output/mixture/AI_vocals_chunk0.wav",
+          midiSag: [
+            "./demo_website_selected/experiment2/Al James - Schoolboy Facination/Backing_track/prompt_01_acoustic_guitar_country_music/text_7.0_con_1.5/mixed_vocals_acoustic_guitar_country_music.wav",
+            "./demo_website_selected/experiment2/Al James - Schoolboy Facination/Backing_track/prompt_02_jazzy_piano_with_an_exciting_vibe_trumpet_drums/text_7.0_con_1.5/mixed_vocals_jazzy_piano_with_an_exciting_vibe_trumpet_drums.wav",
+            "./demo_website_selected/experiment2/Al James - Schoolboy Facination/Backing_track/prompt_03_energetic_pop_rock_with_electric_guitars_bass_and_upbeat_drums/text_7.0_con_1.5/mixed_vocals_energetic_pop_rock_with_electric_guitars_bass_and_upbeat_drums.wav",
+            "./demo_website_selected/experiment2/Al James - Schoolboy Facination/Backing_track/prompt_04_metal_band/text_7.0_con_1.5/mixed_vocals_metal_band.wav",
+          ],
+        },
+        {
+          title: "BKS - Too Much",
+          vocal: "./demo_website_selected/experiment2/BKS - Too Much/vad_audio/vocals.wav",
+          fastsag: "./demo_website_selected/sliced_audio_fastsag_output/sliced_audio/BKS_vocals.wav",
+          anyaccomp: "./demo_website_selected/sliced_audio_AnyAccomp_output/mixture/BKS_vocals_chunk0.wav",
+          midiSag: [
+            "./demo_website_selected/experiment2/BKS - Too Much/Backing_track/text_7.0_con_1.5/mixed_vocals_prompt_01_acoustic_guitar_country_music.wav",
+            "./demo_website_selected/experiment2/BKS - Too Much/Backing_track/text_7.0_con_1.5/mixed_vocals_prompt_02_jazzy_piano_with_an_exciting_vibe_trumpet_drums.wav",
+            "./demo_website_selected/experiment2/BKS - Too Much/Backing_track/text_7.0_con_1.5/mixed_vocals_prompt_03_energetic_pop_rock_with_electric_guitars_bass_and_upbeat_drums.wav",
+            "./demo_website_selected/experiment2/BKS - Too Much/Backing_track/text_7.0_con_1.5/mixed_vocals_prompt_04_metal_band.wav",
+          ],
+        },
+        {
+          title: "Little Chicago's Finest - My Own",
+          vocal: "./demo_website_selected/experiment2/Little Chicago's Finest - My Own/vad_audio/vocals.wav",
+          fastsag: "./demo_website_selected/sliced_audio_fastsag_output/sliced_audio/Little_vocals.wav",
+          anyaccomp: "./demo_website_selected/sliced_audio_AnyAccomp_output/mixture/Little_vocals_chunk0.wav",
+          midiSag: [
+            "./demo_website_selected/experiment2/Little Chicago's Finest - My Own/Backing_track/text_7.0_con_1.5/mixed_vocals_prompt_01_acoustic_guitar_country_music.wav",
+            "./demo_website_selected/experiment2/Little Chicago's Finest - My Own/Backing_track/text_7.0_con_1.5/mixed_vocals_prompt_02_jazzy_piano_with_an_exciting_vibe_trumpet_drums.wav",
+            "./demo_website_selected/experiment2/Little Chicago's Finest - My Own/Backing_track/text_7.0_con_1.5/mixed_vocals_prompt_03_energetic_pop_rock_with_electric_guitars_bass_and_upbeat_drums.wav",
+            "./demo_website_selected/experiment2/Little Chicago's Finest - My Own/Backing_track/text_7.0_con_1.5/mixed_vocals_prompt_04_metal_band.wav",
+          ],
+        },
+        {
+          title: "M.E.R.C. Music - Knockout",
+          vocal: "./demo_website_selected/experiment2/M.E.R.C. Music - Knockout/vad_audio/vocals.wav",
+          fastsag: "./demo_website_selected/sliced_audio_fastsag_output/sliced_audio/MERC_vocals.wav",
+          anyaccomp: "./demo_website_selected/sliced_audio_AnyAccomp_output/mixture/MERC_vocals_chunk0.wav",
+          midiSag: [
+            "./demo_website_selected/experiment2/M.E.R.C. Music - Knockout/Backing_track/text_7.0_con_1.5/mixed_vocals_prompt_01_acoustic_guitar_country_music.wav",
+            "./demo_website_selected/experiment2/M.E.R.C. Music - Knockout/Backing_track/text_7.0_con_1.5/mixed_vocals_prompt_02_jazzy_piano_with_an_exciting_vibe_trumpet_drums.wav",
+            "./demo_website_selected/experiment2/M.E.R.C. Music - Knockout/Backing_track/text_7.0_con_1.5/mixed_vocals_prompt_03_energetic_pop_rock_with_electric_guitars_bass_and_upbeat_drums.wav",
+            "./demo_website_selected/experiment2/M.E.R.C. Music - Knockout/Backing_track/text_7.0_con_1.5/mixed_vocals_prompt_04_metal_band.wav",
+          ],
+        },
+      ];
 
-    // Column descriptions (Vocal + 6 prompts)
-    const COLUMNS = [
-      { label: "Vocal", desc: "Original vocal stem" },
-      { label: "Prompt 1", desc: "acoustic guitar, country music style" },
-      { label: "Prompt 2", desc: "Energetic pop rock with electric guitars, bass, and upbeat drums" },
-      { label: "Prompt 3", desc: "Jazzy piano, with an exciting vibe, trumpet, drums" },
-      { label: "Prompt 4", desc: "Reggae style with a groovy bassline, offbeat guitar strumming, and a relaxed drum pattern" },
-      { label: "Prompt 5", desc: "rock backing music, high quality, with bass guitar, drums, synthesizer" },
-      { label: "Prompt 6", desc: "Uplifting orchestral background with light strings, piano arpeggios, and a hopeful mood" },
-    ];
+      function audioSrc(path) {
+        return encodeURI(path);
+      }
 
-    // 4 rows: each has 1 vocal + 6 mixes
-    const AUDIO = [
-      {
-        title: "AI James - Schoolboy Facination",
-        vocal: "tmp.wav",
-        mixes: [
-          "AI_1.wav",
-          "AI_2.wav",
-          "AI_3.wav",
-          "AI_4.wav",
-          "AI_5.wav",
-          "AI_6.wav",
-        ],
-      },
-      {
-        title: "BKS - Too Much",
-        vocal: "BKS_vocal.wav",
-        mixes: [
-          "BKS_1.wav",
-          "BKS_2.wav",
-          "BKS_3.wav",
-          "BKS_4.wav",
-          "BKS_5.wav",
-          "tmp2.wav",
-        ],
-      },
-      {
-        title: "Bobby Nobody - Stitch Up",
-        vocal: "B_vocal.wav",
-        mixes: [
-          "B_1.wav",
-          "B_2.wav",
-          "B_3.wav",
-          "B_4.wav",
-          "B_5.wav",
-          "B_6.wav",
-        ],
-      },
-      {
-        title: "Juliet's Rescue - Heartbeats",
-        vocal: "J_vocal.wav",
-        mixes: [
-          "J_1.wav",
-          "J_2.wav",
-          "J_3.wav",
-          "J_4.wav",
-          "J_5.wav",
-          "J_6.wav",
-        ],
-      },
-    ];
+      function makeCellHeader(col) {
+        const th = document.createElement("th");
+        th.style.cssText = `
+          border: 1px solid rgba(0,0,0,0.15);
+          padding: 10px;
+          text-align: left;
+          vertical-align: top;
+          background: rgba(0,0,0,0.03);
+          min-width: 260px;
+        `;
+        th.innerHTML = `
+          <div style="font-weight:700; font-size:13px; margin-bottom:6px;">${col.label}</div>
+          <div style="font-size:12px; opacity:0.85; line-height:1.35;">${col.desc}</div>
+        `;
+        return th;
+      }
 
-    function audioSrc(file) {
-      // encodeURI keeps "/" but escapes spaces, apostrophes, commas, etc.
-      return encodeURI(AUDIO_BASE + file);
-    }
+      function makeAudioCell(src, title = "") {
+        const td = document.createElement("td");
+        td.style.cssText = `
+          border: 1px solid rgba(0,0,0,0.15);
+          padding: 10px;
+          vertical-align: top;
+          min-width: 260px;
+        `;
 
-    function makeCellHeader(col) {
-      const th = document.createElement("th");
-      th.style.cssText = `
-        border: 1px solid rgba(0,0,0,0.15);
-        padding: 10px;
-        text-align: left;
-        vertical-align: top;
-        background: rgba(0,0,0,0.03);
-        min-width: 180px;
-      `;
-      th.innerHTML = `
-        <div style="font-weight:700; font-size:13px; margin-bottom:6px;">${col.label}</div>
-        <div style="font-size:12px; opacity:0.85; line-height:1.35;">${col.desc}</div>
-      `;
-      return th;
-    }
+        if (title) {
+          const label = document.createElement("div");
+          label.style.cssText = "font-weight: 600; margin-bottom: 8px;";
+          label.textContent = title;
+          td.appendChild(label);
+        }
 
-    function makeAudioCell(src) {
-      const td = document.createElement("td");
-      td.style.cssText = `
-        border: 1px solid rgba(0,0,0,0.15);
-        padding: 10px;
-        vertical-align: top;
-      `;
-      td.innerHTML = `<audio controls preload="none" style="width: 100%;" src="${src}"></audio>`;
-      return td;
-    }
+        const audio = document.createElement("audio");
+        audio.controls = true;
+        audio.preload = "none";
+        audio.style.width = "100%";
+        audio.src = src;
+        td.appendChild(audio);
 
-    const thead = document.querySelector("#audio-table thead");
-    const tbody = document.querySelector("#audio-table tbody");
+        return td;
+      }
 
-    // Header row with descriptions on top
-    const headerRow = document.createElement("tr");
-    COLUMNS.forEach((c) => headerRow.appendChild(makeCellHeader(c)));
-    thead.appendChild(headerRow);
+      const thead = document.querySelector("#audio-table thead");
+      const tbody = document.querySelector("#audio-table tbody");
 
-    // 4 × 7 body (row label + 7 audios)
-    AUDIO.forEach((track) => {
-      const tr = document.createElement("tr");
+      const headerRow = document.createElement("tr");
+      COMPARISON_COLUMNS.forEach((col) => headerRow.appendChild(makeCellHeader(col)));
+      thead.appendChild(headerRow);
 
-      // Optional row label cell (track name) – if you DON'T want this extra column,
-      // comment this block out. Keeping it would make the table 4×8.
-      const nameTd = document.createElement("td");
-      nameTd.style.cssText = `
-        border: 1px solid rgba(0,0,0,0.15);
-        padding: 10px;
-        vertical-align: top;
-        min-width: 220px;
-        font-weight: 600;
-        background: rgba(0,0,0,0.015);
-        position: sticky;
-        left: 0;
-      `;
-      nameTd.textContent = track.title;
-      // If you want EXACTLY 4×7 (no extra name column), remove the next line:
-      // tr.appendChild(nameTd);
-
-      // Vocal (col 1)
-      tr.appendChild(makeAudioCell(audioSrc(track.vocal)));
-
-      // 6 mixes (cols 2..7)
-      track.mixes.forEach((mixFile) => {
-        tr.appendChild(makeAudioCell(audioSrc(mixFile)));
+      COMPARISON_ROWS.forEach((track) => {
+        const tr = document.createElement("tr");
+        tr.appendChild(makeAudioCell(audioSrc(track.vocal), track.title));
+        tr.appendChild(makeAudioCell(audioSrc(track.fastsag)));
+        tr.appendChild(makeAudioCell(audioSrc(track.anyaccomp)));
+        track.midiSag.forEach((mixPath) => {
+          tr.appendChild(makeAudioCell(audioSrc(mixPath)));
+        });
+        tbody.appendChild(tr);
       });
-
-      tbody.appendChild(tr);
-    });
-  </script>
+    </script>
+  </section>
 </div>
 
 
