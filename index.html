@@ -117,38 +117,47 @@
     .midi-demo-card midi-visualizer {
       display: block;
       width: 100%;
-      height: 120px;
+      height: 160px;
       border: 1px solid #e2e8f0;
       border-radius: 6px;
       background: #f8fafc;
       overflow: hidden;
+      cursor: crosshair;
     }
 
-    .midi-demo-card midi-visualizer .piano-roll-visualizer,
-    .midi-demo-card midi-visualizer svg {
+    .midi-demo-card midi-visualizer .piano-roll-visualizer {
       width: 100%;
       height: 100%;
     }
 
-    /* Default note = chord (lower register / accompaniment) */
-    .midi-demo-card midi-visualizer svg rect.note {
-      fill: #6366f1 !important;
-      opacity: 0.55;
-      transition: fill 80ms ease, opacity 80ms ease;
+    .midi-demo-card midi-visualizer svg {
+      height: 100%;
     }
 
-    /* Melody role set by JS after load */
+    /* Default = chord */
+    .midi-demo-card midi-visualizer svg rect.note {
+      fill: #6366f1 !important;
+      opacity: 0.7;
+      transition: fill 60ms ease, opacity 120ms ease;
+    }
+
     .midi-demo-card midi-visualizer svg rect.note[data-role="melody"] {
       fill: #e0453e !important;
       opacity: 0.85;
     }
 
-    /* Active note being played — overrides role color */
+    /* While playing, dim non-active notes so the active one stands out */
+    .midi-demo-card midi-visualizer.playing svg rect.note {
+      opacity: 0.22;
+    }
+
+    /* The currently-playing note — emphasized (glow + stroke + overrides role color) */
     .midi-demo-card midi-visualizer svg rect.note.active {
       fill: #f59e0b !important;
-      opacity: 1;
-      stroke: #b45309;
-      stroke-width: 0.8;
+      opacity: 1 !important;
+      stroke: #7c2d12;
+      stroke-width: 1.2;
+      filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.95));
     }
 
     .midi-demo-card midi-player {
@@ -156,9 +165,21 @@
       width: 100%;
     }
 
+    /* Bigger seek bar so timing is easier to scrub */
     .midi-demo-card midi-player::part(control-panel) {
       border-radius: 8px;
       background: #f1f5f9;
+      height: 44px;
+    }
+
+    .midi-demo-card midi-player::part(seek-bar) {
+      height: 10px;
+      accent-color: #2563eb;
+    }
+
+    .midi-demo-card midi-player::part(time) {
+      font-variant-numeric: tabular-nums;
+      font-size: 13px;
     }
 
     .midi-demo-legend {
@@ -439,13 +460,32 @@
         player.setAttribute("sound-font", "");
         player.setAttribute("visualizer", `#${vizId}`);
 
-        visualizer.addEventListener("load", () => tagNoteRoles(visualizer));
+        visualizer.addEventListener("load", () => {
+          tagNoteRoles(visualizer);
+
+          // Click anywhere on the piano roll to seek
+          const svg = visualizer.querySelector("svg");
+          if (svg) {
+            svg.addEventListener("click", (event) => {
+              const ns = visualizer.noteSequence;
+              if (!ns || !ns.totalTime) return;
+              const rect = svg.getBoundingClientRect();
+              const x = event.clientX - rect.left;
+              const fraction = Math.max(0, Math.min(1, x / rect.width));
+              player.currentTime = fraction * ns.totalTime;
+            });
+          }
+        });
 
         player.addEventListener("start", () => {
+          visualizer.classList.add("playing");
           document.querySelectorAll("audio").forEach((a) => a.pause());
           document.querySelectorAll("midi-player").forEach((p) => {
             if (p !== player) p.stop();
           });
+        });
+        player.addEventListener("stop", () => {
+          visualizer.classList.remove("playing");
         });
 
         const legend = document.createElement("div");
