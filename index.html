@@ -265,7 +265,7 @@
     .midi-workspace-dialog {
       position: relative;
       width: min(1240px, 96vw);
-      height: min(860px, 92vh);
+      height: min(660px, 76vh);
       display: flex;
       flex-direction: column;
       border-radius: 22px;
@@ -329,10 +329,10 @@
     .midi-workspace-body {
       flex: 1 1 auto;
       min-height: 0;
-      padding: 18px 20px 12px;
+      padding: 14px 20px 10px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 8px;
     }
 
     .midi-workspace-roll-host {
@@ -361,7 +361,7 @@
     @media (max-width: 992px) {
       .midi-workspace-dialog {
         width: 98vw;
-        height: 94vh;
+        height: 72vh;
       }
 
       .midi-workspace-header,
@@ -1128,6 +1128,13 @@
           }
         }
 
+        if (playback.compressor) {
+          try {
+            playback.compressor.disconnect();
+          } catch (error) {
+          }
+        }
+
         if (playback.timeoutId) {
           window.clearTimeout(playback.timeoutId);
         }
@@ -1194,8 +1201,15 @@
           await midiAudioContext.resume();
 
           const masterGain = midiAudioContext.createGain();
-          masterGain.gain.value = 0.16;
-          masterGain.connect(midiAudioContext.destination);
+          const compressor = midiAudioContext.createDynamicsCompressor();
+          masterGain.gain.value = 0.26;
+          compressor.threshold.value = -24;
+          compressor.knee.value = 18;
+          compressor.ratio.value = 8;
+          compressor.attack.value = 0.003;
+          compressor.release.value = 0.25;
+          masterGain.connect(compressor);
+          compressor.connect(midiAudioContext.destination);
 
           const nodes = [];
           const startTime = midiAudioContext.currentTime + 0.05;
@@ -1208,7 +1222,7 @@
             oscillator.frequency.setValueAtTime(event.frequency, startTime + event.start);
 
             gainNode.gain.setValueAtTime(0.0001, startTime + event.start);
-            gainNode.gain.exponentialRampToValueAtTime(event.velocity * 0.2, startTime + event.start + 0.02);
+            gainNode.gain.exponentialRampToValueAtTime(event.velocity * 0.28, startTime + event.start + 0.02);
             gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + event.start + event.duration);
 
             oscillator.connect(gainNode);
@@ -1230,6 +1244,7 @@
             midiPath,
             nodes,
             masterGain,
+            compressor,
             timeoutId: window.setTimeout(() => {
               stopMidiPlayback({ finished: true });
             }, Math.ceil((parsed.duration + 0.25) * 1000)),
