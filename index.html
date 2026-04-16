@@ -89,6 +89,21 @@
       text-align: left;
     }
 
+    .midi-demo-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .midi-demo-trigger {
+      align-self: flex-start;
+      border-radius: 999px;
+    }
+
+    .midi-demo-card[hidden] {
+      display: none !important;
+    }
+
     .midi-demo-card {
       border: 1px solid #dbe4f0;
       border-radius: 12px;
@@ -102,32 +117,69 @@
     .midi-demo-card midi-visualizer {
       display: block;
       width: 100%;
-      height: 96px;
+      height: 120px;
       border: 1px solid #e2e8f0;
       border-radius: 6px;
-      background: #fafbfc;
+      background: #f8fafc;
       overflow: hidden;
     }
 
+    .midi-demo-card midi-visualizer .piano-roll-visualizer,
     .midi-demo-card midi-visualizer svg {
       width: 100%;
       height: 100%;
     }
 
+    /* Default note = chord (lower register / accompaniment) */
     .midi-demo-card midi-visualizer svg rect.note {
-      opacity: 0.75;
+      fill: #6366f1 !important;
+      opacity: 0.55;
+      transition: fill 80ms ease, opacity 80ms ease;
     }
 
+    /* Melody role set by JS after load */
+    .midi-demo-card midi-visualizer svg rect.note[data-role="melody"] {
+      fill: #e0453e !important;
+      opacity: 0.85;
+    }
+
+    /* Active note being played — overrides role color */
     .midi-demo-card midi-visualizer svg rect.note.active {
+      fill: #f59e0b !important;
       opacity: 1;
-      fill: #2563eb;
+      stroke: #b45309;
+      stroke-width: 0.8;
     }
 
     .midi-demo-card midi-player {
       display: block;
       width: 100%;
-      --midi-player-active-note-color: #2563eb;
-      --midi-player-seek-bar-color: #2563eb;
+    }
+
+    .midi-demo-card midi-player::part(control-panel) {
+      border-radius: 8px;
+      background: #f1f5f9;
+    }
+
+    .midi-demo-legend {
+      display: flex;
+      gap: 10px;
+      font-size: 11px;
+      color: #475569;
+      padding: 0 2px;
+    }
+
+    .midi-demo-legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .midi-demo-legend i {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
     }
 
     .midi-demo-footer {
@@ -332,19 +384,48 @@
 
       let midiCellCounter = 0;
 
-      function makeMidiCell(midiPath) {
-        const td = document.createElement("td");
-        td.style.cssText = `
-          border: 1px solid rgba(0,0,0,0.15);
-          padding: 10px;
-          vertical-align: top;
-          min-width: 320px;
-          text-align: left;
-        `;
+      // Assign melody/chord role per note rect using per-instrument avg pitch.
+      // Magenta renders each note rect with data-instrument, data-pitch, data-index.
+      function tagNoteRoles(visualizer) {
+        const ns = visualizer.noteSequence;
+        const rects = visualizer.querySelectorAll("svg rect.note");
+        if (!ns || !rects.length) return;
 
-        const card = document.createElement("div");
-        card.className = "midi-demo-card";
+        const byInstrument = new Map();
+        ns.notes.forEach((n) => {
+          const key = n.instrument ?? 0;
+          if (!byInstrument.has(key)) byInstrument.set(key, []);
+          byInstrument.get(key).push(n.pitch);
+        });
 
+        let melodyInstrument = null;
+        if (byInstrument.size >= 2) {
+          let bestAvg = -Infinity;
+          byInstrument.forEach((pitches, inst) => {
+            const avg = pitches.reduce((a, b) => a + b, 0) / pitches.length;
+            if (avg > bestAvg) {
+              bestAvg = avg;
+              melodyInstrument = inst;
+            }
+          });
+        }
+
+        // Median pitch used as fallback for single-track files
+        const allPitches = ns.notes.map((n) => n.pitch).sort((a, b) => a - b);
+        const medianPitch = allPitches[Math.floor(allPitches.length / 2)] ?? 60;
+
+        rects.forEach((rect) => {
+          const inst = Number(rect.dataset.instrument ?? 0);
+          const pitch = Number(rect.dataset.pitch ?? 0);
+          const isMelody = melodyInstrument !== null
+            ? inst === melodyInstrument
+            : pitch > medianPitch;
+          if (isMelody) rect.dataset.role = "melody";
+          else rect.dataset.role = "chord";
+        });
+      }
+
+      function mountMidiPlayer(card, midiPath) {
         const src = audioSrc(midiPath);
         const vizId = `midi-viz-${++midiCellCounter}`;
 
@@ -358,12 +439,22 @@
         player.setAttribute("sound-font", "");
         player.setAttribute("visualizer", `#${vizId}`);
 
+        visualizer.addEventListener("load", () => tagNoteRoles(visualizer));
+
         player.addEventListener("start", () => {
           document.querySelectorAll("audio").forEach((a) => a.pause());
           document.querySelectorAll("midi-player").forEach((p) => {
             if (p !== player) p.stop();
           });
         });
+
+        const legend = document.createElement("div");
+        legend.className = "midi-demo-legend";
+        legend.innerHTML = `
+          <span><i style="background:#e0453e"></i>Melody</span>
+          <span><i style="background:#6366f1"></i>Chord</span>
+          <span><i style="background:#f59e0b"></i>Playing</span>
+        `;
 
         const footer = document.createElement("div");
         footer.className = "midi-demo-footer";
@@ -374,10 +465,53 @@
         downloadLink.setAttribute("download", "");
         footer.appendChild(downloadLink);
 
+        card.appendChild(legend);
         card.appendChild(visualizer);
         card.appendChild(player);
         card.appendChild(footer);
-        td.appendChild(card);
+
+        return player;
+      }
+
+      function makeMidiCell(midiPath) {
+        const td = document.createElement("td");
+        td.style.cssText = `
+          border: 1px solid rgba(0,0,0,0.15);
+          padding: 10px;
+          vertical-align: top;
+          min-width: 320px;
+          text-align: left;
+        `;
+
+        const cell = document.createElement("div");
+        cell.className = "midi-demo-cell";
+
+        const trigger = document.createElement("button");
+        trigger.type = "button";
+        trigger.className = "btn btn-sm btn-outline-primary midi-demo-trigger";
+        trigger.innerHTML = '<i class="bi bi-music-note-beamed"></i> Show MIDI player';
+
+        const card = document.createElement("div");
+        card.className = "midi-demo-card";
+        card.hidden = true;
+
+        let player = null;
+
+        trigger.addEventListener("click", () => {
+          if (card.hidden) {
+            if (!player) player = mountMidiPlayer(card, midiPath);
+            card.hidden = false;
+            trigger.innerHTML = '<i class="bi bi-eye-slash"></i> Hide MIDI player';
+          } else {
+            if (player && typeof player.stop === "function") player.stop();
+            card.hidden = true;
+            trigger.innerHTML = '<i class="bi bi-music-note-beamed"></i> Show MIDI player';
+          }
+        });
+
+        cell.appendChild(trigger);
+        cell.appendChild(card);
+        td.appendChild(cell);
 
         return td;
       }
