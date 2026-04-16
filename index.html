@@ -640,7 +640,7 @@
       const workspaceSeekCurrent = document.getElementById("midi-workspace-seek-current");
       const workspaceSeekTotal = document.getElementById("midi-workspace-seek-total");
 
-      const BASE_MIDI_GAIN = 0.34;
+      const BASE_MIDI_GAIN = 0.46;
       let midiVolumeMultiplier = Number(workspaceVolume.value) / 100;
 
       function pauseAllAudios() {
@@ -757,7 +757,10 @@
       }
 
       function midiMetaLabel(parsed) {
-        return `${parsed.noteCount} notes · ${formatSeconds(parsed.duration)} · ${noteName(parsed.minNote)}-${noteName(parsed.maxNote)}`;
+        const trackLabel = parsed.tracks && parsed.tracks.length
+          ? ` · ${parsed.tracks.map((track) => track.name).join(" + ")}`
+          : "";
+        return `${parsed.noteCount} notes · ${formatSeconds(parsed.duration)} · ${noteName(parsed.minNote)}-${noteName(parsed.maxNote)}${trackLabel}`;
       }
 
       function populateMetaRow(container, parsed) {
@@ -767,6 +770,12 @@
           `${formatSeconds(parsed.duration)} long`,
           `${noteName(parsed.minNote)}-${noteName(parsed.maxNote)}`,
         ];
+
+        if (parsed.tracks && parsed.tracks.length) {
+          parsed.tracks.forEach((track) => {
+            chips.push(`${track.name}: ${track.noteCount}`);
+          });
+        }
 
         chips.forEach((text) => {
           const chip = document.createElement("span");
@@ -793,6 +802,7 @@
         let offset = 8 + headerLength;
         const tempoEvents = [{ tick: 0, mpq: 500000 }];
         const finishedNotes = [];
+        const tracks = [];
 
         for (let trackIndex = 0; trackIndex < trackCount; trackIndex++) {
           if (readAscii(view, offset, 4) !== "MTrk") {
@@ -805,6 +815,11 @@
           const openNotes = new Map();
           let absoluteTick = 0;
           let runningStatus = null;
+          let trackName = `Track ${trackIndex + 1}`;
+          const channels = new Set();
+          let trackNoteCount = 0;
+          let trackMin = null;
+          let trackMax = null;
 
           while (offset < trackEnd) {
             const delta = readVarLen(view, offset);
@@ -827,6 +842,11 @@
               const metaLength = readVarLen(view, offset);
               offset = metaLength.offset;
 
+              if (metaType === 0x03) {
+                const bytes = new Uint8Array(arrayBuffer, offset, metaLength.value);
+                trackName = new TextDecoder().decode(bytes) || trackName;
+              }
+
               if (metaType === 0x51 && metaLength.value === 3) {
                 const mpq =
                   (view.getUint8(offset) << 16) |
@@ -847,6 +867,7 @@
 
             const eventType = statusByte & 0xf0;
             const channel = statusByte & 0x0f;
+            channels.add(channel);
 
             if (eventType === 0x80 || eventType === 0x90) {
               const noteNumber = view.getUint8(offset++);
@@ -869,7 +890,13 @@
                     velocity: start.velocity / 127,
                     startTick: start.tick,
                     endTick: absoluteTick,
+                    trackIndex,
+                    trackName,
+                    channel,
                   });
+                  trackNoteCount += 1;
+                  trackMin = trackMin === null ? noteNumber : Math.min(trackMin, noteNumber);
+                  trackMax = trackMax === null ? noteNumber : Math.max(trackMax, noteNumber);
                 }
               }
               continue;
@@ -885,6 +912,15 @@
               continue;
             }
           }
+
+          tracks.push({
+            trackIndex,
+            name: trackName,
+            channels: [...channels].sort((a, b) => a - b),
+            noteCount: trackNoteCount,
+            minNote: trackMin,
+            maxNote: trackMax,
+          });
         }
 
         finalizeTempoEvents(tempoEvents, ticksPerQuarter);
@@ -901,6 +937,9 @@
               velocity: Math.max(0.12, Math.min(note.velocity, 0.9)),
               start,
               duration: Math.max(0.08, end - start),
+              trackIndex: note.trackIndex,
+              trackName: note.trackName,
+              channel: note.channel,
             };
           })
           .sort((a, b) => a.start - b.start);
@@ -918,6 +957,7 @@
             minNote: 60,
             maxNote: 72,
             noteCount: 0,
+            tracks,
           };
         }
 
@@ -941,6 +981,7 @@
           minNote,
           maxNote,
           noteCount: events.length,
+          tracks,
         };
       }
 
@@ -1122,14 +1163,33 @@
           }
         });
 
-        parsed.events.forEach((event, index) => {
+        const melodyEvents = [];
+        const chordEvents = [];
+        parsed.events.forEach((event) => {
+          if (/melody/i.test(event.trackName || "")) {
+            melodyEvents.push(event);
+          } else {
+            chordEvents.push(event);
+          }
+        });
+
+        const drawEvent = (event, index, type) => {
           const x = (event.start / duration) * timelineWidth;
           const width = Math.max(3, (event.duration / duration) * timelineWidth);
           const y = topPadding + (parsed.maxNote - event.noteNumber) * laneHeight + 1;
-          const height = Math.max(2, laneHeight - 2);
-          const fill = compact
-            ? `rgba(153, 66, 50, ${0.74 + event.velocity * 0.16})`
-            : `rgba(139, 55, 42, ${0.72 + event.velocity * 0.18})`;
+          const height = Math.max(2, laneHeight - (type === "melody" ? 1 : 2));
+
+          const fill = type === "melody"
+            ? (compact
+                ? `rgba(219, 79, 58, ${0.84 + event.velocity * 0.12})`
+                : `rgba(226, 88, 62, ${0.86 + event.velocity * 0.1})`)
+            : (compact
+                ? `rgba(139, 92, 74, ${0.38 + event.velocity * 0.12})`
+                : `rgba(120, 72, 56, ${0.42 + event.velocity * 0.12})`);
+
+          const stroke = type === "melody"
+            ? "rgba(255,255,255,0.72)"
+            : "rgba(115, 43, 32, 0.12)";
 
           svg.appendChild(createSvgElement("rect", {
             x,
@@ -1139,10 +1199,22 @@
             rx: compact ? 1.5 : 3,
             ry: compact ? 1.5 : 3,
             fill,
-            stroke: compact ? "rgba(125, 48, 36, 0.2)" : "rgba(115, 43, 32, 0.28)",
-            "stroke-width": compact ? "0.4" : "0.7",
+            stroke,
+            "stroke-width": type === "melody" ? (compact ? "0.5" : "0.9") : (compact ? "0.35" : "0.6"),
           }));
-        });
+
+          if (type === "melody" && !compact) {
+            svg.appendChild(createSvgElement("circle", {
+              cx: x + 2,
+              cy: y + Math.max(2, height / 2),
+              r: "1.5",
+              fill: "rgba(255,255,255,0.88)",
+            }));
+          }
+        };
+
+        chordEvents.forEach((event, index) => drawEvent(event, index, "chord"));
+        melodyEvents.forEach((event, index) => drawEvent(event, index, "melody"));
 
         const playhead = document.createElement("div");
         playhead.className = "midi-roll-playhead";
@@ -1332,6 +1404,7 @@
 
           const nodes = [];
           const startTime = midiAudioContext.currentTime + 0.05;
+          const releaseTail = 0.32;
 
           parsed.events.forEach((event) => {
             const eventEnd = event.start + event.duration;
@@ -1346,13 +1419,14 @@
             oscillator.frequency.setValueAtTime(event.frequency, startTime + scheduledStart);
 
             gainNode.gain.setValueAtTime(0.0001, startTime + scheduledStart);
-            gainNode.gain.exponentialRampToValueAtTime(event.velocity * 0.28, startTime + scheduledStart + 0.02);
-            gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + scheduledStart + remainingDuration);
+            gainNode.gain.exponentialRampToValueAtTime(event.velocity * 0.34, startTime + scheduledStart + 0.02);
+            gainNode.gain.setValueAtTime(event.velocity * 0.31, startTime + scheduledStart + Math.max(0.03, remainingDuration - 0.02));
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + scheduledStart + remainingDuration + releaseTail);
 
             oscillator.connect(gainNode);
             gainNode.connect(masterGain);
             oscillator.start(startTime + scheduledStart);
-            oscillator.stop(startTime + scheduledStart + remainingDuration + 0.03);
+            oscillator.stop(startTime + scheduledStart + remainingDuration + releaseTail + 0.05);
 
             nodes.push(oscillator, gainNode);
           });
@@ -1644,8 +1718,8 @@
         <a class="btn btn-sm btn-outline-secondary" id="midi-workspace-download" href="#" download>Download MIDI</a>
         <label class="midi-volume-control" for="midi-workspace-volume">
           <span>Volume</span>
-          <input type="range" id="midi-workspace-volume" min="40" max="220" step="1" value="125">
-          <span id="midi-workspace-volume-value">125%</span>
+          <input type="range" id="midi-workspace-volume" min="40" max="260" step="1" value="150">
+          <span id="midi-workspace-volume-value">150%</span>
         </label>
       </div>
       <div class="midi-workspace-inspector">
