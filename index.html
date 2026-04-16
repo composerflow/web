@@ -85,6 +85,297 @@
       font-family: monospace;
       text-align: left;
     }
+
+    body.midi-workspace-open {
+      overflow: hidden;
+    }
+
+    .midi-demo-card {
+      border: 1px solid rgba(15, 23, 42, 0.18);
+      border-radius: 14px;
+      padding: 12px;
+      background:
+        radial-gradient(circle at top left, rgba(59, 130, 246, 0.14), transparent 38%),
+        linear-gradient(180deg, #0f172a 0%, #020617 100%);
+      color: #dbeafe;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    }
+
+    .midi-demo-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .midi-demo-toolbar .btn {
+      border-radius: 999px;
+    }
+
+    .midi-demo-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .midi-demo-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.14);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      color: #cbd5e1;
+      font-size: 11px;
+      letter-spacing: 0.02em;
+    }
+
+    .midi-demo-status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    .midi-demo-status-row strong {
+      color: #e2e8f0;
+      font-weight: 600;
+    }
+
+    .midi-roll-shell {
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #020617;
+    }
+
+    .midi-roll-shell.compact {
+      min-height: 134px;
+    }
+
+    .midi-roll-main {
+      display: grid;
+      grid-template-columns: 68px minmax(0, 1fr);
+      min-height: 100%;
+    }
+
+    .midi-roll-shell.compact .midi-roll-main {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .midi-roll-keyboard {
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.95), rgba(2, 6, 23, 0.95));
+      border-right: 1px solid rgba(148, 163, 184, 0.12);
+      color: #94a3b8;
+      font-size: 10px;
+      user-select: none;
+    }
+
+    .midi-roll-ruler-spacer {
+      height: 26px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+    }
+
+    .midi-roll-key-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 8px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+      box-sizing: border-box;
+    }
+
+    .midi-roll-key-row.black {
+      background: rgba(15, 23, 42, 0.95);
+    }
+
+    .midi-roll-key-row.white {
+      background: rgba(30, 41, 59, 0.72);
+    }
+
+    .midi-roll-viewport {
+      position: relative;
+      overflow: auto;
+      background: #020617;
+    }
+
+    .midi-roll-shell.compact .midi-roll-viewport {
+      overflow: hidden;
+    }
+
+    .midi-roll-content {
+      position: relative;
+    }
+
+    .midi-roll-svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .midi-roll-playhead {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(180deg, #f8fafc 0%, #f59e0b 45%, #ef4444 100%);
+      box-shadow: 0 0 0 1px rgba(248, 250, 252, 0.16), 0 0 16px rgba(245, 158, 11, 0.35);
+      pointer-events: none;
+      z-index: 4;
+    }
+
+    .midi-roll-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 132px;
+      padding: 18px;
+      color: #94a3b8;
+      font-size: 12px;
+      letter-spacing: 0.02em;
+      background:
+        linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.94)),
+        repeating-linear-gradient(90deg, rgba(148,163,184,0.06) 0, rgba(148,163,184,0.06) 1px, transparent 1px, transparent 72px);
+    }
+
+    .midi-workspace-modal[hidden] {
+      display: none !important;
+    }
+
+    .midi-workspace-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .midi-workspace-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.76);
+      backdrop-filter: blur(4px);
+    }
+
+    .midi-workspace-dialog {
+      position: relative;
+      width: min(1240px, 96vw);
+      height: min(860px, 92vh);
+      display: flex;
+      flex-direction: column;
+      border-radius: 22px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at top left, rgba(37, 99, 235, 0.16), transparent 30%),
+        linear-gradient(180deg, #0f172a 0%, #020617 100%);
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      box-shadow: 0 28px 90px rgba(2, 6, 23, 0.56);
+      color: #e2e8f0;
+    }
+
+    .midi-workspace-header,
+    .midi-workspace-toolbar,
+    .midi-workspace-footer {
+      padding: 16px 20px;
+    }
+
+    .midi-workspace-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+    }
+
+    .midi-workspace-header h3 {
+      margin: 0;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+
+    .midi-workspace-header p {
+      margin: 4px 0 0;
+      color: #94a3b8;
+      font-size: 13px;
+    }
+
+    .midi-workspace-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+    }
+
+    .midi-workspace-controls,
+    .midi-workspace-inspector {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .midi-workspace-inspector {
+      justify-content: flex-end;
+    }
+
+    .midi-workspace-body {
+      flex: 1 1 auto;
+      min-height: 0;
+      padding: 18px 20px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .midi-workspace-roll-host {
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+
+    .midi-workspace-roll-host .midi-roll-shell {
+      height: 100%;
+    }
+
+    .midi-workspace-roll-host .midi-roll-viewport {
+      height: 100%;
+    }
+
+    .midi-workspace-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      border-top: 1px solid rgba(148, 163, 184, 0.12);
+      font-size: 13px;
+      color: #94a3b8;
+    }
+
+    @media (max-width: 992px) {
+      .midi-workspace-dialog {
+        width: 98vw;
+        height: 94vh;
+      }
+
+      .midi-workspace-header,
+      .midi-workspace-toolbar,
+      .midi-workspace-footer,
+      .midi-workspace-body {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+
+      .midi-roll-main {
+        grid-template-columns: 58px minmax(0, 1fr);
+      }
+    }
   </style>
 </head>
 
@@ -147,13 +438,13 @@
 </div>
 
 <!-- =======================
-     Audio Samples (4 × 7 table: Vocal + FastSAG + AnyAccomp + 4 MIDI-SAG prompts)
+     Audio Samples (4 × 8 table: Vocal + FastSAG + AnyAccomp + Predicted MIDI + 4 MIDI-SAG prompts)
      ======================= -->
 <div class="container my-4">
   <section id="audio-samples" style="margin: 32px 0;">
-    <h2 style="margin: 0 0 10px;">1. Vocal-Conditioned Accompaniment Comparison</h2>
+    <h2 style="margin: 0 0 10px;">1. Experiment 2: MIDI-SAG without Groundtruth Vocal MIDI</h2>
     <p style="margin: 0 0 18px; opacity: 0.8; line-height: 1.4;">
-      Each row uses the same vocal input. The columns compare the vocal track, FastSAG, AnyAccomp, and four MIDI-SAG outputs generated with different accompaniment text prompts.
+      Each row uses the same vocal input. The columns compare the vocal track, FastSAG, AnyAccomp, the predicted vocal MIDI and chord sequence quantized with detected beat, and four MIDI-SAG outputs generated with different accompaniment text prompts.
     </p>
 
     <div id="audio-table-wrap" class="table-responsive drag-scroll">
@@ -163,11 +454,12 @@
       </table>
     </div>
 
-    <script>
+    <script type="module">
       const COMPARISON_COLUMNS = [
-        { label: "Vocal", desc: "Input vocal audio used for accompaniment generation" },
-        { label: "FastSAG", desc: "Output from demo_website_selected/sliced_audio_fastsag_output" },
-        { label: "AnyAccomp", desc: "Output from demo_website_selected/sliced_audio_AnyAccomp_output" },
+        { label: "Vocal"},
+        { label: "FastSAG"},
+        { label: "AnyAccomp"},
+        { label: "Predicted vocal MIDI and chord, quantized with detected beat", desc: "Playable MIDI rendered with a browser synth" },
         { label: "MIDI-SAG P1", desc: "acoustic guitar, country music" },
         { label: "MIDI-SAG P2", desc: "jazzy piano, with an exciting vibe, trumpet, drums" },
         { label: "MIDI-SAG P3", desc: "energetic pop rock with electric guitars, bass, and upbeat drums" },
@@ -180,6 +472,7 @@
           vocal: "./demo_website_selected/experiment2/Al James - Schoolboy Facination/vad_audio/vocals.wav",
           fastsag: "./demo_website_selected/sliced_audio_fastsag_output/sliced_audio/AI_vocals.wav",
           anyaccomp: "./demo_website_selected/sliced_audio_AnyAccomp_output/mixture/AI_vocals_chunk0.wav",
+          predictedMidi: "./demo_website_selected/experiment2/Al James - Schoolboy Facination/Harmonization_results/chord_gen_filled_empty/vocals_chord_gen_filled_empty_bars.mid",
           midiSag: [
             "./demo_website_selected/experiment2/Al James - Schoolboy Facination/Backing_track/prompt_01_acoustic_guitar_country_music/text_7.0_con_1.5/mixed_vocals_acoustic_guitar_country_music.wav",
             "./demo_website_selected/experiment2/Al James - Schoolboy Facination/Backing_track/prompt_02_jazzy_piano_with_an_exciting_vibe_trumpet_drums/text_7.0_con_1.5/mixed_vocals_jazzy_piano_with_an_exciting_vibe_trumpet_drums.wav",
@@ -192,6 +485,7 @@
           vocal: "./demo_website_selected/experiment2/BKS - Too Much/vad_audio/vocals.wav",
           fastsag: "./demo_website_selected/sliced_audio_fastsag_output/sliced_audio/BKS_vocals.wav",
           anyaccomp: "./demo_website_selected/sliced_audio_AnyAccomp_output/mixture/BKS_vocals_chunk0.wav",
+          predictedMidi: "./demo_website_selected/experiment2/BKS - Too Much/Harmonization_results/chord_gen_filled_empty/vocals_chord_gen_filled_empty_bars.mid",
           midiSag: [
             "./demo_website_selected/experiment2/BKS - Too Much/Backing_track/text_7.0_con_1.5/mixed_vocals_prompt_01_acoustic_guitar_country_music.wav",
             "./demo_website_selected/experiment2/BKS - Too Much/Backing_track/text_7.0_con_1.5/mixed_vocals_prompt_02_jazzy_piano_with_an_exciting_vibe_trumpet_drums.wav",
@@ -204,6 +498,7 @@
           vocal: "./demo_website_selected/experiment2/Little Chicago's Finest - My Own/vad_audio/vocals.wav",
           fastsag: "./demo_website_selected/sliced_audio_fastsag_output/sliced_audio/Little_vocals.wav",
           anyaccomp: "./demo_website_selected/sliced_audio_AnyAccomp_output/mixture/Little_vocals_chunk0.wav",
+          predictedMidi: "./demo_website_selected/experiment2/Little Chicago's Finest - My Own/Harmonization_results/chord_gen_filled_empty/vocals_chord_gen_filled_empty_bars.mid",
           midiSag: [
             "./demo_website_selected/experiment2/Little Chicago's Finest - My Own/Backing_track/text_7.0_con_1.5/mixed_vocals_prompt_01_acoustic_guitar_country_music.wav",
             "./demo_website_selected/experiment2/Little Chicago's Finest - My Own/Backing_track/text_7.0_con_1.5/mixed_vocals_prompt_02_jazzy_piano_with_an_exciting_vibe_trumpet_drums.wav",
@@ -216,6 +511,7 @@
           vocal: "./demo_website_selected/experiment2/M.E.R.C. Music - Knockout/vad_audio/vocals.wav",
           fastsag: "./demo_website_selected/sliced_audio_fastsag_output/sliced_audio/MERC_vocals.wav",
           anyaccomp: "./demo_website_selected/sliced_audio_AnyAccomp_output/mixture/MERC_vocals_chunk0.wav",
+          predictedMidi: "./demo_website_selected/experiment2/M.E.R.C. Music - Knockout/Harmonization_results/chord_gen_filled_empty/vocals_chord_gen_filled_empty_bars.mid",
           midiSag: [
             "./demo_website_selected/experiment2/M.E.R.C. Music - Knockout/Backing_track/text_7.0_con_1.5/mixed_vocals_prompt_01_acoustic_guitar_country_music.wav",
             "./demo_website_selected/experiment2/M.E.R.C. Music - Knockout/Backing_track/text_7.0_con_1.5/mixed_vocals_prompt_02_jazzy_piano_with_an_exciting_vibe_trumpet_drums.wav",
@@ -239,9 +535,12 @@
           background: rgba(0,0,0,0.03);
           min-width: 260px;
         `;
+        const descHtml = col.desc
+          ? `<div style="font-size:12px; opacity:0.85; line-height:1.35;">${col.desc}</div>`
+          : "";
         th.innerHTML = `
           <div style="font-weight:700; font-size:13px; margin-bottom:6px;">${col.label}</div>
-          <div style="font-size:12px; opacity:0.85; line-height:1.35;">${col.desc}</div>
+          ${descHtml}
         `;
         return th;
       }
@@ -272,6 +571,874 @@
         return td;
       }
 
+      const midiCache = new Map();
+      let midiAudioContext = null;
+      let activeMidiPlayback = null;
+      let activeWorkspace = null;
+
+      const workspaceModal = document.getElementById("midi-workspace-modal");
+      const workspaceTitle = document.getElementById("midi-workspace-title");
+      const workspaceCloseButton = document.getElementById("midi-workspace-close");
+      const workspacePlayButton = document.getElementById("midi-workspace-play");
+      const workspaceStopButton = document.getElementById("midi-workspace-stop");
+      const workspaceDownload = document.getElementById("midi-workspace-download");
+      const workspaceTime = document.getElementById("midi-workspace-time");
+      const workspaceMeta = document.getElementById("midi-workspace-meta");
+      const workspaceStatus = document.getElementById("midi-workspace-status");
+      const workspaceRollHost = document.getElementById("midi-workspace-roll-host");
+
+      function pauseAllAudios() {
+        const audios = document.getElementsByTagName("audio");
+        for (let i = 0; i < audios.length; i++) {
+          audios[i].pause();
+        }
+      }
+
+      function formatSeconds(totalSeconds) {
+        const safeSeconds = Math.max(0, totalSeconds || 0);
+        if (safeSeconds >= 60) {
+          const minutes = Math.floor(safeSeconds / 60);
+          const seconds = (safeSeconds - minutes * 60).toFixed(1).padStart(4, "0");
+          return `${minutes}:${seconds}`;
+        }
+        return safeSeconds.toFixed(1);
+      }
+
+      function noteName(noteNumber) {
+        const names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+        const octave = Math.floor(noteNumber / 12) - 1;
+        return `${names[noteNumber % 12]}${octave}`;
+      }
+
+      function isBlackKey(noteNumber) {
+        return [1, 3, 6, 8, 10].includes(noteNumber % 12);
+      }
+
+      function setStatusMessage(elements, message) {
+        elements.forEach((element) => {
+          if (element) element.textContent = message;
+        });
+      }
+
+      function setButtonState(targets, isPlaying) {
+        targets.forEach((target) => {
+          if (target.playButton) target.playButton.disabled = isPlaying;
+          if (target.stopButton) target.stopButton.disabled = !isPlaying;
+        });
+      }
+
+      function updateTimeDisplays(targets, currentSeconds, duration) {
+        const label = `${formatSeconds(currentSeconds)} / ${formatSeconds(duration)}`;
+        targets.forEach((target) => {
+          if (target.timeEl) target.timeEl.textContent = label;
+        });
+      }
+
+      function readAscii(view, offset, length) {
+        let result = "";
+        for (let i = 0; i < length; i++) {
+          result += String.fromCharCode(view.getUint8(offset + i));
+        }
+        return result;
+      }
+
+      function readVarLen(view, offset) {
+        let value = 0;
+        let byte = 0;
+        do {
+          byte = view.getUint8(offset++);
+          value = (value << 7) | (byte & 0x7f);
+        } while (byte & 0x80);
+        return { value, offset };
+      }
+
+      function finalizeTempoEvents(tempoEvents, ticksPerQuarter) {
+        tempoEvents.sort((a, b) => a.tick - b.tick);
+        let secondsAtTick = 0;
+
+        for (let i = 0; i < tempoEvents.length; i++) {
+          if (i > 0) {
+            const previous = tempoEvents[i - 1];
+            const deltaTicks = tempoEvents[i].tick - previous.tick;
+            secondsAtTick += (deltaTicks * previous.mpq) / (ticksPerQuarter * 1000000);
+          }
+          tempoEvents[i].secondsAtTick = secondsAtTick;
+        }
+      }
+
+      function ticksToSeconds(tick, tempoEvents, ticksPerQuarter) {
+        let activeTempo = tempoEvents[0];
+        for (let i = 1; i < tempoEvents.length; i++) {
+          if (tempoEvents[i].tick > tick) break;
+          activeTempo = tempoEvents[i];
+        }
+        return activeTempo.secondsAtTick + ((tick - activeTempo.tick) * activeTempo.mpq) / (ticksPerQuarter * 1000000);
+      }
+
+      function noteNumberToFrequency(noteNumber) {
+        return 440 * Math.pow(2, (noteNumber - 69) / 12);
+      }
+
+      function midiMetaLabel(parsed) {
+        return `${parsed.noteCount} notes · ${formatSeconds(parsed.duration)} · ${noteName(parsed.minNote)}-${noteName(parsed.maxNote)}`;
+      }
+
+      function populateMetaRow(container, parsed) {
+        container.innerHTML = "";
+        const chips = [
+          `${parsed.noteCount} notes`,
+          `${formatSeconds(parsed.duration)} long`,
+          `${noteName(parsed.minNote)}-${noteName(parsed.maxNote)}`,
+        ];
+
+        chips.forEach((text) => {
+          const chip = document.createElement("span");
+          chip.className = "midi-demo-chip";
+          chip.textContent = text;
+          container.appendChild(chip);
+        });
+      }
+
+      function parseMidi(arrayBuffer) {
+        const view = new DataView(arrayBuffer);
+        if (readAscii(view, 0, 4) !== "MThd") {
+          throw new Error("Invalid MIDI header");
+        }
+
+        const headerLength = view.getUint32(4);
+        const trackCount = view.getUint16(10);
+        const division = view.getUint16(12);
+        if (division & 0x8000) {
+          throw new Error("SMPTE time division is not supported");
+        }
+
+        const ticksPerQuarter = division;
+        let offset = 8 + headerLength;
+        const tempoEvents = [{ tick: 0, mpq: 500000 }];
+        const finishedNotes = [];
+
+        for (let trackIndex = 0; trackIndex < trackCount; trackIndex++) {
+          if (readAscii(view, offset, 4) !== "MTrk") {
+            throw new Error("Invalid MIDI track");
+          }
+
+          const trackLength = view.getUint32(offset + 4);
+          offset += 8;
+          const trackEnd = offset + trackLength;
+          const openNotes = new Map();
+          let absoluteTick = 0;
+          let runningStatus = null;
+
+          while (offset < trackEnd) {
+            const delta = readVarLen(view, offset);
+            absoluteTick += delta.value;
+            offset = delta.offset;
+
+            let statusByte = view.getUint8(offset++);
+            if (statusByte < 0x80) {
+              offset--;
+              if (runningStatus === null) {
+                throw new Error("Missing running status");
+              }
+              statusByte = runningStatus;
+            } else {
+              runningStatus = statusByte;
+            }
+
+            if (statusByte === 0xff) {
+              const metaType = view.getUint8(offset++);
+              const metaLength = readVarLen(view, offset);
+              offset = metaLength.offset;
+
+              if (metaType === 0x51 && metaLength.value === 3) {
+                const mpq =
+                  (view.getUint8(offset) << 16) |
+                  (view.getUint8(offset + 1) << 8) |
+                  view.getUint8(offset + 2);
+                tempoEvents.push({ tick: absoluteTick, mpq });
+              }
+
+              offset += metaLength.value;
+              continue;
+            }
+
+            if (statusByte === 0xf0 || statusByte === 0xf7) {
+              const sysexLength = readVarLen(view, offset);
+              offset = sysexLength.offset + sysexLength.value;
+              continue;
+            }
+
+            const eventType = statusByte & 0xf0;
+            const channel = statusByte & 0x0f;
+
+            if (eventType === 0x80 || eventType === 0x90) {
+              const noteNumber = view.getUint8(offset++);
+              const velocity = view.getUint8(offset++);
+              const noteKey = `${channel}:${noteNumber}`;
+
+              if (eventType === 0x90 && velocity > 0) {
+                if (!openNotes.has(noteKey)) openNotes.set(noteKey, []);
+                openNotes.get(noteKey).push({
+                  tick: absoluteTick,
+                  velocity,
+                  noteNumber,
+                });
+              } else {
+                const stack = openNotes.get(noteKey);
+                if (stack && stack.length) {
+                  const start = stack.pop();
+                  finishedNotes.push({
+                    noteNumber,
+                    velocity: start.velocity / 127,
+                    startTick: start.tick,
+                    endTick: absoluteTick,
+                  });
+                }
+              }
+              continue;
+            }
+
+            if (eventType === 0xa0 || eventType === 0xb0 || eventType === 0xe0) {
+              offset += 2;
+              continue;
+            }
+
+            if (eventType === 0xc0 || eventType === 0xd0) {
+              offset += 1;
+              continue;
+            }
+          }
+        }
+
+        finalizeTempoEvents(tempoEvents, ticksPerQuarter);
+
+        let maxTick = 0;
+        const events = finishedNotes
+          .map((note) => {
+            const start = ticksToSeconds(note.startTick, tempoEvents, ticksPerQuarter);
+            const end = ticksToSeconds(note.endTick, tempoEvents, ticksPerQuarter);
+            maxTick = Math.max(maxTick, note.endTick);
+            return {
+              noteNumber: note.noteNumber,
+              frequency: noteNumberToFrequency(note.noteNumber),
+              velocity: Math.max(0.12, Math.min(note.velocity, 0.9)),
+              start,
+              duration: Math.max(0.08, end - start),
+            };
+          })
+          .sort((a, b) => a.start - b.start);
+
+        const duration = events.reduce((maxDuration, event) => {
+          return Math.max(maxDuration, event.start + event.duration);
+        }, 0);
+
+        if (!events.length) {
+          return {
+            events: [],
+            duration: 0,
+            beatTimes: [],
+            barTimes: [],
+            minNote: 60,
+            maxNote: 72,
+            noteCount: 0,
+          };
+        }
+
+        const minNote = Math.max(24, Math.min(...events.map((event) => event.noteNumber)) - 2);
+        const maxNote = Math.min(96, Math.max(...events.map((event) => event.noteNumber)) + 2);
+        const beatTimes = [];
+        const barTimes = [];
+
+        for (let tick = 0, beatIndex = 0; tick <= maxTick + ticksPerQuarter; tick += ticksPerQuarter, beatIndex++) {
+          const seconds = ticksToSeconds(tick, tempoEvents, ticksPerQuarter);
+          if (seconds > duration + 0.25) break;
+          beatTimes.push(seconds);
+          if (beatIndex % 4 === 0) barTimes.push(seconds);
+        }
+
+        return {
+          events,
+          duration,
+          beatTimes,
+          barTimes,
+          minNote,
+          maxNote,
+          noteCount: events.length,
+        };
+      }
+
+      async function getParsedMidi(midiPath) {
+        if (midiCache.has(midiPath)) {
+          return midiCache.get(midiPath);
+        }
+
+        const promise = (async () => {
+          const response = await fetch(audioSrc(midiPath));
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          return parseMidi(await response.arrayBuffer());
+        })();
+
+        midiCache.set(midiPath, promise);
+
+        try {
+          return await promise;
+        } catch (error) {
+          midiCache.delete(midiPath);
+          throw error;
+        }
+      }
+
+      function createSvgElement(tagName, attributes = {}) {
+        const element = document.createElementNS("http://www.w3.org/2000/svg", tagName);
+        Object.entries(attributes).forEach(([key, value]) => {
+          element.setAttribute(key, value);
+        });
+        return element;
+      }
+
+      function createRollSurface(parsed, options = {}) {
+        const compact = Boolean(options.compact);
+        const noteSpan = Math.max(1, parsed.maxNote - parsed.minNote + 1);
+        const laneHeight = compact
+          ? Math.max(4, Math.min(8, 110 / noteSpan))
+          : Math.max(6, Math.min(14, 360 / noteSpan));
+        const topPadding = compact ? 0 : 26;
+        const rollHeight = Math.ceil(noteSpan * laneHeight);
+        const contentHeight = rollHeight + topPadding;
+        const timelineWidth = compact ? 1000 : Math.max(1180, Math.ceil(Math.max(parsed.duration, 1) * 115));
+        const duration = Math.max(parsed.duration, 0.001);
+
+        const shell = document.createElement("div");
+        shell.className = `midi-roll-shell${compact ? " compact" : ""}`;
+        if (!compact) shell.style.height = "100%";
+
+        const main = document.createElement("div");
+        main.className = "midi-roll-main";
+        if (!compact) main.style.height = "100%";
+
+        if (!compact) {
+          const keyboard = document.createElement("div");
+          keyboard.className = "midi-roll-keyboard";
+
+          const spacer = document.createElement("div");
+          spacer.className = "midi-roll-ruler-spacer";
+          keyboard.appendChild(spacer);
+
+          for (let note = parsed.maxNote; note >= parsed.minNote; note--) {
+            const row = document.createElement("div");
+            row.className = `midi-roll-key-row ${isBlackKey(note) ? "black" : "white"}`;
+            row.style.height = `${laneHeight}px`;
+            row.textContent = note % 12 === 0 ? noteName(note) : "";
+            keyboard.appendChild(row);
+          }
+
+          main.appendChild(keyboard);
+        }
+
+        const viewport = document.createElement("div");
+        viewport.className = "midi-roll-viewport";
+        if (!compact) viewport.style.height = "100%";
+
+        const content = document.createElement("div");
+        content.className = "midi-roll-content";
+        content.style.height = `${contentHeight}px`;
+        if (compact) {
+          content.style.width = "100%";
+        } else {
+          content.style.width = `${timelineWidth}px`;
+        }
+
+        const svg = createSvgElement("svg", {
+          class: "midi-roll-svg",
+          viewBox: `0 0 ${timelineWidth} ${contentHeight}`,
+          preserveAspectRatio: "none",
+        });
+        if (!compact) {
+          svg.setAttribute("width", timelineWidth);
+          svg.setAttribute("height", contentHeight);
+        }
+
+        svg.appendChild(createSvgElement("rect", {
+          x: 0,
+          y: 0,
+          width: timelineWidth,
+          height: contentHeight,
+          fill: "#020617",
+        }));
+
+        if (!compact) {
+          svg.appendChild(createSvgElement("rect", {
+            x: 0,
+            y: 0,
+            width: timelineWidth,
+            height: topPadding,
+            fill: "#0b1220",
+          }));
+        }
+
+        for (let note = parsed.maxNote; note >= parsed.minNote; note--) {
+          const y = topPadding + (parsed.maxNote - note) * laneHeight;
+          svg.appendChild(createSvgElement("rect", {
+            x: 0,
+            y,
+            width: timelineWidth,
+            height: laneHeight,
+            fill: isBlackKey(note) ? "rgba(15,23,42,0.88)" : "rgba(17,24,39,0.88)",
+          }));
+
+          svg.appendChild(createSvgElement("line", {
+            x1: 0,
+            y1: y,
+            x2: timelineWidth,
+            y2: y,
+            stroke: "rgba(148,163,184,0.12)",
+            "stroke-width": "1",
+          }));
+        }
+
+        parsed.beatTimes.forEach((beatTime) => {
+          const x = (beatTime / duration) * timelineWidth;
+          svg.appendChild(createSvgElement("line", {
+            x1: x,
+            y1: topPadding,
+            x2: x,
+            y2: contentHeight,
+            stroke: "rgba(148,163,184,0.14)",
+            "stroke-width": "1",
+          }));
+        });
+
+        parsed.barTimes.forEach((barTime, index) => {
+          const x = (barTime / duration) * timelineWidth;
+          svg.appendChild(createSvgElement("line", {
+            x1: x,
+            y1: 0,
+            x2: x,
+            y2: contentHeight,
+            stroke: "rgba(96,165,250,0.38)",
+            "stroke-width": "1.5",
+          }));
+
+          if (!compact) {
+            const label = createSvgElement("text", {
+              x: x + 4,
+              y: 16,
+              fill: "rgba(191,219,254,0.82)",
+              "font-size": "11",
+              "font-family": "monospace",
+            });
+            label.textContent = `bar ${index + 1}`;
+            svg.appendChild(label);
+          }
+        });
+
+        parsed.events.forEach((event, index) => {
+          const x = (event.start / duration) * timelineWidth;
+          const width = Math.max(3, (event.duration / duration) * timelineWidth);
+          const y = topPadding + (parsed.maxNote - event.noteNumber) * laneHeight + 1;
+          const height = Math.max(2, laneHeight - 2);
+          const hue = 205 + ((event.noteNumber + index) % 24) * 3;
+
+          svg.appendChild(createSvgElement("rect", {
+            x,
+            y,
+            width,
+            height,
+            rx: compact ? 1.5 : 3,
+            ry: compact ? 1.5 : 3,
+            fill: `hsla(${hue}, 82%, ${compact ? "64%" : "58%"}, ${0.62 + event.velocity * 0.25})`,
+            stroke: "rgba(255,255,255,0.08)",
+            "stroke-width": compact ? "0.4" : "0.7",
+          }));
+        });
+
+        const playhead = document.createElement("div");
+        playhead.className = "midi-roll-playhead";
+        playhead.style.left = "0";
+
+        content.appendChild(svg);
+        content.appendChild(playhead);
+        viewport.appendChild(content);
+        main.appendChild(viewport);
+        shell.appendChild(main);
+
+        return {
+          root: shell,
+          viewport,
+          playhead,
+          autoScroll: !compact,
+          rollWidth: compact ? 100 : timelineWidth,
+          usePercent: compact,
+        };
+      }
+
+      function setSurfacePlayhead(surface, ratio, syncScroll = false) {
+        if (!surface) return;
+
+        const clampedRatio = Math.max(0, Math.min(1, ratio));
+
+        if (surface.usePercent) {
+          surface.playhead.style.left = `${clampedRatio * 100}%`;
+          return;
+        }
+
+        const x = clampedRatio * surface.rollWidth;
+        surface.playhead.style.left = `${x}px`;
+
+        if (syncScroll && surface.autoScroll) {
+          const maxScroll = Math.max(0, surface.rollWidth - surface.viewport.clientWidth);
+          const desiredScroll = x - surface.viewport.clientWidth * 0.35;
+          surface.viewport.scrollLeft = Math.max(0, Math.min(maxScroll, desiredScroll));
+        }
+      }
+
+      function collectPlaybackTargets(midiPath, primaryTarget) {
+        const targets = [primaryTarget];
+        if (activeWorkspace && activeWorkspace.midiPath === midiPath && activeWorkspace !== primaryTarget) {
+          targets.push(activeWorkspace);
+        }
+        return targets;
+      }
+
+      function stopMidiPlayback(options = {}) {
+        if (!activeMidiPlayback) return;
+
+        const { finished = false } = options;
+        const playback = activeMidiPlayback;
+
+        if (playback.nodes) {
+          playback.nodes.forEach((node) => {
+            try {
+              node.stop();
+            } catch (error) {
+            }
+            try {
+              node.disconnect();
+            } catch (error) {
+            }
+          });
+        }
+
+        if (playback.masterGain) {
+          try {
+            playback.masterGain.disconnect();
+          } catch (error) {
+          }
+        }
+
+        if (playback.timeoutId) {
+          window.clearTimeout(playback.timeoutId);
+        }
+
+        if (playback.animationFrameId) {
+          window.cancelAnimationFrame(playback.animationFrameId);
+        }
+
+        setButtonState(playback.targets, false);
+        setStatusMessage(
+          playback.targets.map((target) => target.statusEl),
+          finished ? "Finished" : "Ready"
+        );
+        updateTimeDisplays(playback.targets, finished ? playback.duration : 0, playback.duration);
+        playback.targets.forEach((target) => {
+          if (target.surface) setSurfacePlayhead(target.surface, finished ? 1 : 0, false);
+        });
+
+        activeMidiPlayback = null;
+      }
+
+      window.stopMidiPlayback = stopMidiPlayback;
+
+      function startPlaybackAnimation() {
+        if (!activeMidiPlayback) return;
+
+        const tick = () => {
+          if (!activeMidiPlayback) return;
+
+          const elapsed = Math.max(0, midiAudioContext.currentTime - activeMidiPlayback.startTime);
+          const ratio = activeMidiPlayback.duration
+            ? Math.min(elapsed / activeMidiPlayback.duration, 1)
+            : 0;
+
+          activeMidiPlayback.targets.forEach((target) => {
+            if (target.surface) setSurfacePlayhead(target.surface, ratio, true);
+          });
+          updateTimeDisplays(activeMidiPlayback.targets, Math.min(elapsed, activeMidiPlayback.duration), activeMidiPlayback.duration);
+
+          if (ratio < 1) {
+            activeMidiPlayback.animationFrameId = window.requestAnimationFrame(tick);
+          }
+        };
+
+        activeMidiPlayback.animationFrameId = window.requestAnimationFrame(tick);
+      }
+
+      async function playMidiFile(midiPath, primaryTarget) {
+        const targets = collectPlaybackTargets(midiPath, primaryTarget);
+        stopMidiPlayback();
+        pauseAllAudios();
+
+        try {
+          setStatusMessage(targets.map((target) => target.statusEl), "Loading MIDI workspace...");
+
+          const parsed = await getParsedMidi(midiPath);
+          if (!parsed.events.length) {
+            throw new Error("No playable notes found");
+          }
+
+          if (!midiAudioContext) {
+            midiAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+          }
+          await midiAudioContext.resume();
+
+          const masterGain = midiAudioContext.createGain();
+          masterGain.gain.value = 0.16;
+          masterGain.connect(midiAudioContext.destination);
+
+          const nodes = [];
+          const startTime = midiAudioContext.currentTime + 0.05;
+
+          parsed.events.forEach((event) => {
+            const oscillator = midiAudioContext.createOscillator();
+            const gainNode = midiAudioContext.createGain();
+
+            oscillator.type = event.noteNumber < 58 ? "triangle" : "sine";
+            oscillator.frequency.setValueAtTime(event.frequency, startTime + event.start);
+
+            gainNode.gain.setValueAtTime(0.0001, startTime + event.start);
+            gainNode.gain.exponentialRampToValueAtTime(event.velocity * 0.2, startTime + event.start + 0.02);
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + event.start + event.duration);
+
+            oscillator.connect(gainNode);
+            gainNode.connect(masterGain);
+            oscillator.start(startTime + event.start);
+            oscillator.stop(startTime + event.start + event.duration + 0.03);
+
+            nodes.push(oscillator, gainNode);
+          });
+
+          setButtonState(targets, true);
+          setStatusMessage(targets.map((target) => target.statusEl), "Playing");
+          updateTimeDisplays(targets, 0, parsed.duration);
+          targets.forEach((target) => {
+            if (target.surface) setSurfacePlayhead(target.surface, 0, false);
+          });
+
+          activeMidiPlayback = {
+            midiPath,
+            nodes,
+            masterGain,
+            timeoutId: window.setTimeout(() => {
+              stopMidiPlayback({ finished: true });
+            }, Math.ceil((parsed.duration + 0.25) * 1000)),
+            animationFrameId: null,
+            startTime,
+            duration: parsed.duration,
+            targets,
+          };
+
+          startPlaybackAnimation();
+        } catch (error) {
+          setButtonState(targets, false);
+          setStatusMessage(
+            targets.map((target) => target.statusEl),
+            window.location.protocol === "file:"
+              ? "Serve this page over HTTP to enable MIDI workspace playback."
+              : `Unable to load MIDI: ${error.message}`
+          );
+        }
+      }
+
+      function closeWorkspace() {
+        stopMidiPlayback();
+        activeWorkspace = null;
+        workspaceModal.hidden = true;
+        document.body.classList.remove("midi-workspace-open");
+      }
+
+      async function openWorkspace(songTitle, midiPath) {
+        stopMidiPlayback();
+
+        workspaceModal.hidden = false;
+        document.body.classList.add("midi-workspace-open");
+        workspaceTitle.textContent = `${songTitle} · MIDI Workspace`;
+        workspaceDownload.href = audioSrc(midiPath);
+        workspaceTime.textContent = "0.0 / 0.0";
+        workspaceMeta.textContent = "Loading...";
+        workspaceStatus.textContent = "Loading workspace...";
+        workspacePlayButton.disabled = true;
+        workspaceStopButton.disabled = true;
+        workspaceRollHost.innerHTML = '<div class="midi-roll-placeholder">Loading piano roll workspace...</div>';
+
+        try {
+          const parsed = await getParsedMidi(midiPath);
+          const surface = createRollSurface(parsed, { compact: false });
+
+          workspaceRollHost.innerHTML = "";
+          workspaceRollHost.appendChild(surface.root);
+          workspaceTime.textContent = `0.0 / ${formatSeconds(parsed.duration)}`;
+          workspaceMeta.textContent = midiMetaLabel(parsed);
+          workspaceStatus.textContent = "Ready";
+
+          activeWorkspace = {
+            songTitle,
+            midiPath,
+            surface,
+            playButton: workspacePlayButton,
+            stopButton: workspaceStopButton,
+            statusEl: workspaceStatus,
+            timeEl: workspaceTime,
+          };
+
+          workspacePlayButton.disabled = false;
+          workspaceStopButton.disabled = true;
+        } catch (error) {
+          activeWorkspace = null;
+          workspaceMeta.textContent = "Unavailable";
+          workspaceStatus.textContent = window.location.protocol === "file:"
+            ? "Serve this page over HTTP to enable the MIDI workspace."
+            : `Unable to load workspace: ${error.message}`;
+          workspaceRollHost.innerHTML = `<div class="midi-roll-placeholder">${workspaceStatus.textContent}</div>`;
+        }
+      }
+
+      workspaceCloseButton.addEventListener("click", closeWorkspace);
+      workspaceModal.addEventListener("click", (event) => {
+        if (event.target.dataset.midiClose === "true") {
+          closeWorkspace();
+        }
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !workspaceModal.hidden) {
+          closeWorkspace();
+        }
+      });
+      workspacePlayButton.addEventListener("click", () => {
+        if (activeWorkspace) {
+          playMidiFile(activeWorkspace.midiPath, activeWorkspace);
+        }
+      });
+      workspaceStopButton.addEventListener("click", () => {
+        stopMidiPlayback();
+      });
+
+      function makeMidiCell(midiPath, songTitle) {
+        const td = document.createElement("td");
+        td.style.cssText = `
+          border: 1px solid rgba(0,0,0,0.15);
+          padding: 10px;
+          vertical-align: top;
+          min-width: 320px;
+          text-align: left;
+        `;
+
+        const card = document.createElement("div");
+        card.className = "midi-demo-card";
+
+        const buttonRow = document.createElement("div");
+        buttonRow.className = "midi-demo-toolbar";
+
+        const playButton = document.createElement("button");
+        playButton.type = "button";
+        playButton.className = "btn btn-sm btn-primary";
+        playButton.textContent = "Play";
+
+        const stopButton = document.createElement("button");
+        stopButton.type = "button";
+        stopButton.className = "btn btn-sm btn-outline-light";
+        stopButton.textContent = "Stop";
+        stopButton.disabled = true;
+
+        const workspaceButton = document.createElement("button");
+        workspaceButton.type = "button";
+        workspaceButton.className = "btn btn-sm btn-outline-info";
+        workspaceButton.textContent = "Open workspace";
+
+        const downloadLink = document.createElement("a");
+        downloadLink.className = "btn btn-sm btn-outline-light";
+        downloadLink.href = audioSrc(midiPath);
+        downloadLink.textContent = "Download";
+        downloadLink.setAttribute("download", "");
+
+        buttonRow.appendChild(playButton);
+        buttonRow.appendChild(stopButton);
+        buttonRow.appendChild(workspaceButton);
+        buttonRow.appendChild(downloadLink);
+
+        const metaRow = document.createElement("div");
+        metaRow.className = "midi-demo-meta";
+
+        const previewHost = document.createElement("div");
+        previewHost.innerHTML = '<div class="midi-roll-placeholder">Loading piano-roll preview...</div>';
+
+        const statusRow = document.createElement("div");
+        statusRow.className = "midi-demo-status-row";
+
+        const status = document.createElement("div");
+        status.innerHTML = "<strong>Ready</strong> to preview";
+
+        const time = document.createElement("div");
+        time.textContent = "0.0 / 0.0";
+
+        statusRow.appendChild(status);
+        statusRow.appendChild(time);
+
+        const target = {
+          midiPath,
+          songTitle,
+          surface: null,
+          playButton,
+          stopButton,
+          statusEl: status,
+          timeEl: time,
+        };
+
+        playButton.addEventListener("click", () => {
+          playMidiFile(midiPath, target);
+        });
+
+        stopButton.addEventListener("click", () => {
+          stopMidiPlayback();
+        });
+
+        workspaceButton.addEventListener("click", () => {
+          openWorkspace(songTitle, midiPath);
+        });
+
+        previewHost.addEventListener("click", () => {
+          openWorkspace(songTitle, midiPath);
+        });
+        previewHost.style.cursor = "pointer";
+
+        card.appendChild(buttonRow);
+        card.appendChild(metaRow);
+        card.appendChild(previewHost);
+        card.appendChild(statusRow);
+        td.appendChild(card);
+
+        getParsedMidi(midiPath)
+          .then((parsed) => {
+            target.surface = createRollSurface(parsed, { compact: true });
+            previewHost.innerHTML = "";
+            previewHost.appendChild(target.surface.root);
+            populateMetaRow(metaRow, parsed);
+            status.textContent = "Mini piano roll ready";
+            time.textContent = `0.0 / ${formatSeconds(parsed.duration)}`;
+          })
+          .catch((error) => {
+            const message = window.location.protocol === "file:"
+              ? "Serve this page over HTTP to enable the MIDI workspace."
+              : `Unable to load MIDI preview: ${error.message}`;
+            previewHost.innerHTML = `<div class="midi-roll-placeholder">${message}</div>`;
+            status.textContent = "Preview unavailable";
+            time.textContent = "0.0 / 0.0";
+          });
+
+        return td;
+      }
+
       const thead = document.querySelector("#audio-table thead");
       const tbody = document.querySelector("#audio-table tbody");
 
@@ -284,6 +1451,7 @@
         tr.appendChild(makeAudioCell(audioSrc(track.vocal), track.title));
         tr.appendChild(makeAudioCell(audioSrc(track.fastsag)));
         tr.appendChild(makeAudioCell(audioSrc(track.anyaccomp)));
+        tr.appendChild(makeMidiCell(track.predictedMidi, track.title));
         track.midiSag.forEach((mixPath) => {
           tr.appendChild(makeAudioCell(audioSrc(mixPath)));
         });
@@ -291,6 +1459,39 @@
       });
     </script>
   </section>
+</div>
+
+<div id="midi-workspace-modal" class="midi-workspace-modal" hidden>
+  <div class="midi-workspace-backdrop" data-midi-close="true"></div>
+  <div class="midi-workspace-dialog" role="dialog" aria-modal="true" aria-labelledby="midi-workspace-title">
+    <div class="midi-workspace-header">
+      <div>
+        <h3 id="midi-workspace-title">MIDI Workspace</h3>
+        <p>Interactive piano-roll playback for the predicted vocal MIDI and chord sequence.</p>
+      </div>
+      <button type="button" class="btn btn-sm btn-outline-light" id="midi-workspace-close">Close</button>
+    </div>
+    <div class="midi-workspace-toolbar">
+      <div class="midi-workspace-controls">
+        <button type="button" class="btn btn-sm btn-primary" id="midi-workspace-play">Play</button>
+        <button type="button" class="btn btn-sm btn-outline-light" id="midi-workspace-stop" disabled>Stop</button>
+        <a class="btn btn-sm btn-outline-light" id="midi-workspace-download" href="#" download>Download MIDI</a>
+      </div>
+      <div class="midi-workspace-inspector">
+        <span class="midi-demo-chip" id="midi-workspace-time">0.0 / 0.0</span>
+        <span class="midi-demo-chip" id="midi-workspace-meta">Loading...</span>
+      </div>
+    </div>
+    <div class="midi-workspace-body">
+      <div id="midi-workspace-roll-host" class="midi-workspace-roll-host">
+        <div class="midi-roll-placeholder">Load a MIDI file to inspect the piano-roll workspace.</div>
+      </div>
+    </div>
+    <div class="midi-workspace-footer">
+      <span id="midi-workspace-status">Ready</span>
+      <span>Browser synth preview with animated piano roll</span>
+    </div>
+  </div>
 </div>
 
 
@@ -4242,6 +5443,9 @@ Text C: (paste your third text prompt here)
   // Ensure only one <audio> plays at a time across the whole page
   document.addEventListener('play', function (e) {
     if (e.target.tagName.toLowerCase() !== 'audio') return;
+    if (typeof window.stopMidiPlayback === 'function') {
+      window.stopMidiPlayback();
+    }
     const audios = document.getElementsByTagName('audio');
     for (let i = 0; i < audios.length; i++) {
       if (audios[i] !== e.target) {
