@@ -25,8 +25,8 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
 
-  <!-- html-midi-player: SoundFont-based MIDI player + piano-roll visualizer (web components) -->
-  <script src="https://cdn.jsdelivr.net/combine/npm/tone@14.7.77,npm/@magenta/music@1.23.1/es6/core.js,npm/focus-visible@5,npm/html-midi-player@1.5.0"></script>
+  <!-- Tone.js for audio, @magenta/music core for MIDI parsing only -->
+  <script src="https://cdn.jsdelivr.net/combine/npm/tone@14.7.77,npm/@magenta/music@1.23.1/es6/core.js"></script>
 
   <style>
       /* Drag-to-scroll affordance */
@@ -89,165 +89,73 @@
       text-align: left;
     }
 
-    .midi-demo-cell {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .midi-demo-trigger {
-      align-self: flex-start;
-      border-radius: 999px;
-    }
-
-    .midi-demo-card[hidden] {
-      display: none !important;
-    }
-
+    /* Custom MIDI player (piano-roll + transport) */
+    .midi-demo-cell { display: flex; flex-direction: column; gap: 8px; }
+    .midi-demo-trigger { align-self: flex-start; border-radius: 999px; }
+    .midi-demo-card[hidden] { display: none !important; }
     .midi-demo-card {
-      border: 1px solid #dbe4f0;
-      border-radius: 12px;
-      padding: 8px;
-      background: #ffffff;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
+      border: 1px solid #dbe4f0; border-radius: 12px; padding: 8px;
+      background: #ffffff; display: flex; flex-direction: column; gap: 8px;
     }
 
-    /* Piano-roll viewport wraps visualizer + playhead overlay */
-    .midi-roll-viewport {
-      position: relative;
-      width: 100%;
-      height: 170px;
-      border: 1px solid #e2e8f0;
-      border-radius: 6px;
-      background: #f8fafc;
+    .midi-viewport {
+      position: relative; width: 100%; height: 180px;
+      border: 1px solid #e2e8f0; border-radius: 6px; background: #f8fafc;
       overflow: hidden;
     }
-
-    .midi-demo-card midi-visualizer {
-      display: block;
-      width: 100%;
-      height: 100%;
+    .midi-roll-scroll {
+      width: 100%; height: 100%;
+      overflow-x: scroll; overflow-y: hidden;
+      scrollbar-width: auto; scrollbar-color: #6366f1 #e2e8f0;
       cursor: crosshair;
     }
-
-    /* The library slots a .piano-roll-visualizer wrapper; let it scroll horizontally */
-    .midi-demo-card midi-visualizer .piano-roll-visualizer {
-      width: 100%;
-      height: 100%;
-      overflow-x: scroll;
-      overflow-y: hidden;
-      scrollbar-width: auto;
-      scrollbar-color: #6366f1 #e2e8f0;
+    .midi-roll-scroll::-webkit-scrollbar { height: 14px; background: #e2e8f0; }
+    .midi-roll-scroll::-webkit-scrollbar-thumb {
+      background: #6366f1; border-radius: 10px; border: 2px solid #e2e8f0;
     }
-
-    .midi-demo-card midi-visualizer .piano-roll-visualizer::-webkit-scrollbar {
-      height: 14px;
-      background: #e2e8f0;
+    .midi-roll-scroll::-webkit-scrollbar-thumb:hover { background: #4f46e5; }
+    .midi-roll-scroll svg { display: block; }
+    .midi-roll-scroll svg rect.midi-note-playing {
+      filter: drop-shadow(0 0 4px rgba(250, 204, 21, 0.95));
     }
-    .midi-demo-card midi-visualizer .piano-roll-visualizer::-webkit-scrollbar-thumb {
-      background: #6366f1;
-      border-radius: 10px;
-      border: 2px solid #e2e8f0;
-    }
-    .midi-demo-card midi-visualizer .piano-roll-visualizer::-webkit-scrollbar-thumb:hover {
-      background: #4f46e5;
-    }
-
-    /* Note colors are applied per-rect from JS via the `fill` attribute.
-       We keep CSS out of specificity wars, and just animate the active ring. */
-    .midi-demo-card midi-visualizer svg rect.note {
-      opacity: 0.9;
-    }
-    .midi-demo-card midi-visualizer svg rect.note.playing-now {
-      filter: drop-shadow(0 0 6px rgba(250, 204, 21, 0.95));
-      animation: midi-note-pulse 0.6s ease-in-out infinite alternate;
-    }
-
-    @keyframes midi-note-pulse {
-      from { filter: drop-shadow(0 0 3px rgba(250, 204, 21, 0.7)); }
-      to   { filter: drop-shadow(0 0 10px rgba(250, 204, 21, 1)); }
-    }
-
-    /* Vertical playhead line — follows playback time */
-    .midi-roll-playhead {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      width: 2px;
-      margin-left: -1px;
+    .midi-playhead {
+      position: absolute; top: 0; bottom: 14px; /* above scrollbar */
+      width: 2px; margin-left: -1px;
       background: linear-gradient(180deg, #f59e0b 0%, #dc2626 100%);
-      box-shadow: 0 0 10px rgba(245, 158, 11, 0.9);
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 120ms ease;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.9);
+      pointer-events: none; opacity: 0; transition: opacity 120ms ease;
       z-index: 5;
     }
+    .midi-viewport.playing .midi-playhead { opacity: 1; }
 
-    .midi-roll-viewport.playing .midi-roll-playhead {
-      opacity: 1;
+    .midi-transport {
+      display: flex; align-items: center; gap: 10px;
+      background: #eef2ff; border-radius: 10px; padding: 8px 12px;
     }
+    .midi-play-btn {
+      width: 40px; height: 40px; border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 0; font-size: 18px; flex: 0 0 auto;
+    }
+    .midi-play-btn[disabled] { opacity: 0.6; cursor: wait; }
+    .midi-time {
+      font-variant-numeric: tabular-nums; font-size: 13px;
+      min-width: 90px; color: #334155; flex: 0 0 auto;
+    }
+    .midi-seek {
+      flex: 1 1 auto; height: 18px; accent-color: #2563eb; cursor: grab;
+    }
+    .midi-seek:active { cursor: grabbing; }
 
-    .midi-demo-card midi-player {
-      display: block;
-      width: 100%;
-      min-height: 52px;
+    .midi-legend {
+      display: flex; gap: 12px; font-size: 11px; color: #475569; padding: 0 2px;
     }
-
-    /* Bigger, more-visible seek bar so scrubbing is easy */
-    .midi-demo-card midi-player::part(control-panel) {
-      border-radius: 10px;
-      background: #eef2ff;
-      height: 52px;
-      padding: 0 12px;
+    .midi-legend span { display: inline-flex; align-items: center; gap: 4px; }
+    .midi-legend i {
+      display: inline-block; width: 10px; height: 10px; border-radius: 2px;
     }
-
-    .midi-demo-card midi-player::part(seek-bar) {
-      height: 18px;
-      accent-color: #2563eb;
-      cursor: grab;
-    }
-    .midi-demo-card midi-player::part(seek-bar):active {
-      cursor: grabbing;
-    }
-
-    .midi-demo-card midi-player::part(time) {
-      font-variant-numeric: tabular-nums;
-      font-size: 13px;
-      min-width: 84px;
-    }
-
-    .midi-demo-card midi-player::part(play-button) {
-      width: 40px;
-      height: 40px;
-    }
-
-    .midi-demo-legend {
-      display: flex;
-      gap: 10px;
-      font-size: 11px;
-      color: #475569;
-      padding: 0 2px;
-    }
-
-    .midi-demo-legend span {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .midi-demo-legend i {
-      display: inline-block;
-      width: 10px;
-      height: 10px;
-      border-radius: 2px;
-    }
-
     .midi-demo-footer {
-      display: flex;
-      justify-content: flex-end;
-      font-size: 12px;
+      display: flex; justify-content: flex-end; font-size: 12px;
     }
   </style>
 </head>
@@ -444,246 +352,207 @@
         return td;
       }
 
-      let midiCellCounter = 0;
+      // ===== Custom MIDI player =====
+      // Parse MIDI with Magenta's parser (urlToNoteSequence), render a
+      // custom SVG piano roll, and play audio with a Tone.Sampler loaded with
+      // Salamander piano samples. No html-midi-player / midi-visualizer.
 
-      const MELODY_COLOR = "#e0453e";
-      const CHORD_COLOR = "#6366f1";
+      // Magenta's UMD bundle exposes itself as `window.core`.
+      const mm = window.core;
+
+      const MELODY_COLOR = "#dc2626";
+      const CHORD_COLOR = "#4f46e5";
       const ACTIVE_COLOR = "#facc15";
+      const PX_PER_SEC = 60;
+      const NOTE_HEIGHT = 5;
 
-      // Paint each note rect directly (bypass CSS specificity against the
-      // library's inline `fill` attribute). Melody vs chord is inferred from
-      // per-instrument avg pitch (highest-avg instrument is melody).
-      function tagNoteRoles(visualizer) {
-        const ns = visualizer.noteSequence;
-        const rects = visualizer.querySelectorAll("svg rect.note");
-        if (!ns || !rects.length) return;
-
-        const byInstrument = new Map();
-        ns.notes.forEach((n) => {
-          const key = n.instrument ?? 0;
-          if (!byInstrument.has(key)) byInstrument.set(key, []);
-          byInstrument.get(key).push(n.pitch);
-        });
-
-        let melodyInstrument = null;
-        if (byInstrument.size >= 2) {
-          let bestAvg = -Infinity;
-          byInstrument.forEach((pitches, inst) => {
-            const avg = pitches.reduce((a, b) => a + b, 0) / pitches.length;
-            if (avg > bestAvg) {
-              bestAvg = avg;
-              melodyInstrument = inst;
-            }
-          });
-        }
-
-        const allPitches = ns.notes.map((n) => n.pitch).sort((a, b) => a - b);
-        const medianPitch = allPitches[Math.floor(allPitches.length / 2)] ?? 60;
-
-        rects.forEach((rect) => {
-          const inst = Number(rect.dataset.instrument ?? 0);
-          const pitch = Number(rect.dataset.pitch ?? 0);
-          const isMelody = melodyInstrument !== null
-            ? inst === melodyInstrument
-            : pitch > medianPitch;
-          const role = isMelody ? "melody" : "chord";
-          rect.dataset.role = role;
-          // Remember base color on the rect itself so we can restore after
-          // the library toggles the `fill` attribute for the active state.
-          const baseColor = isMelody ? MELODY_COLOR : CHORD_COLOR;
-          rect.dataset.baseFill = baseColor;
-          rect.setAttribute("fill", baseColor);
-        });
+      // Lazy-loaded shared piano (loaded after first user gesture)
+      let pianoSynthPromise = null;
+      function getPianoSynth() {
+        if (pianoSynthPromise) return pianoSynthPromise;
+        pianoSynthPromise = (async () => {
+          await Tone.start();
+          const synth = new Tone.Sampler({
+            urls: {
+              "A0":"A0.mp3","C1":"C1.mp3","D#1":"Ds1.mp3","F#1":"Fs1.mp3",
+              "A1":"A1.mp3","C2":"C2.mp3","D#2":"Ds2.mp3","F#2":"Fs2.mp3",
+              "A2":"A2.mp3","C3":"C3.mp3","D#3":"Ds3.mp3","F#3":"Fs3.mp3",
+              "A3":"A3.mp3","C4":"C4.mp3","D#4":"Ds4.mp3","F#4":"Fs4.mp3",
+              "A4":"A4.mp3","C5":"C5.mp3","D#5":"Ds5.mp3","F#5":"Fs5.mp3",
+              "A5":"A5.mp3","C6":"C6.mp3","D#6":"Ds6.mp3","F#6":"Fs6.mp3",
+              "A6":"A6.mp3","C7":"C7.mp3","D#7":"Ds7.mp3","F#7":"Fs7.mp3",
+              "A7":"A7.mp3","C8":"C8.mp3",
+            },
+            baseUrl: "https://tonejs.github.io/audio/salamander/",
+            release: 1,
+          }).toDestination();
+          await Tone.loaded();
+          return synth;
+        })();
+        return pianoSynthPromise;
       }
 
-      function mountMidiPlayer(card, midiPath) {
+      // Only one custom player plays at a time
+      let activePlayerController = null;
+
+      function pitchToName(p) {
+        const names = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+        return `${names[p % 12]}${Math.floor(p / 12) - 1}`;
+      }
+      function formatTime(sec) {
+        sec = Math.max(0, sec || 0);
+        const m = Math.floor(sec / 60);
+        const s = Math.floor(sec % 60);
+        return `${m}:${s.toString().padStart(2, "0")}`;
+      }
+
+      async function mountMidiPlayer(card, midiPath) {
         const src = audioSrc(midiPath);
-        const vizId = `midi-viz-${++midiCellCounter}`;
 
         const viewport = document.createElement("div");
-        viewport.className = "midi-roll-viewport";
+        viewport.className = "midi-viewport";
+        const loading = document.createElement("div");
+        loading.style.cssText = "position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#64748b;font-size:13px;";
+        loading.textContent = "Loading MIDI…";
+        viewport.appendChild(loading);
+        card.appendChild(viewport);
 
-        const visualizer = document.createElement("midi-visualizer");
-        visualizer.setAttribute("type", "piano-roll");
-        visualizer.setAttribute("src", src);
-        visualizer.id = vizId;
+        let ns;
+        try {
+          ns = await mm.urlToNoteSequence(src);
+        } catch (err) {
+          loading.textContent = "Failed to load MIDI";
+          console.error(err);
+          return null;
+        }
 
+        // Fallback min-duration so very short files still have a usable bar
+        const totalTime = Math.max(ns.totalTime || 0, 1);
+
+        // Categorize melody vs chord by per-instrument avg pitch
+        const byInstr = new Map();
+        ns.notes.forEach((n) => {
+          const k = n.instrument ?? 0;
+          if (!byInstr.has(k)) byInstr.set(k, []);
+          byInstr.get(k).push(n.pitch);
+        });
+        let melodyInstr = null;
+        if (byInstr.size >= 2) {
+          let best = -Infinity;
+          byInstr.forEach((pitches, k) => {
+            const avg = pitches.reduce((a, b) => a + b, 0) / pitches.length;
+            if (avg > best) { best = avg; melodyInstr = k; }
+          });
+        }
+        // Single-track fallback: top third of pitches is melody
+        const sorted = ns.notes.map((n) => n.pitch).sort((a, b) => a - b);
+        const melodyThreshold = sorted[Math.floor(sorted.length * 0.67)] ?? 60;
+
+        function isMelody(note) {
+          if (melodyInstr !== null) return (note.instrument ?? 0) === melodyInstr;
+          return note.pitch >= melodyThreshold;
+        }
+
+        const minPitch = sorted[0] ?? 48;
+        const maxPitch = sorted[sorted.length - 1] ?? 72;
+        const pitchRange = Math.max(1, maxPitch - minPitch + 1);
+        const rollHeight = Math.max(pitchRange * NOTE_HEIGHT, 120);
+        const rollWidth = Math.max(totalTime * PX_PER_SEC, 400);
+
+        // Scroll + SVG
+        const scroll = document.createElement("div");
+        scroll.className = "midi-roll-scroll";
+        const svgNS = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(svgNS, "svg");
+        svg.setAttribute("width", rollWidth);
+        svg.setAttribute("height", rollHeight);
+        svg.setAttribute("viewBox", `0 0 ${rollWidth} ${rollHeight}`);
+
+        // Black-key row shading
+        for (let p = minPitch; p <= maxPitch; p++) {
+          const y = (maxPitch - p) * NOTE_HEIGHT;
+          const isBlack = [1,3,6,8,10].includes(((p % 12) + 12) % 12);
+          if (isBlack) {
+            const bg = document.createElementNS(svgNS, "rect");
+            bg.setAttribute("x", 0); bg.setAttribute("y", y);
+            bg.setAttribute("width", rollWidth); bg.setAttribute("height", NOTE_HEIGHT);
+            bg.setAttribute("fill", "#eef2ff");
+            svg.appendChild(bg);
+          }
+        }
+        // Beat grid (every 0.5 sec, stronger line every 1 sec)
+        for (let t = 0; t <= totalTime; t += 0.5) {
+          const x = Math.round(t * PX_PER_SEC);
+          const line = document.createElementNS(svgNS, "line");
+          line.setAttribute("x1", x); line.setAttribute("x2", x);
+          line.setAttribute("y1", 0); line.setAttribute("y2", rollHeight);
+          line.setAttribute("stroke", (t % 1 === 0) ? "#cbd5e1" : "#e2e8f0");
+          line.setAttribute("stroke-width", 1);
+          svg.appendChild(line);
+        }
+
+        // Notes
+        const noteEntries = [];
+        ns.notes.forEach((note, idx) => {
+          const melody = isMelody(note);
+          const rect = document.createElementNS(svgNS, "rect");
+          const x = note.startTime * PX_PER_SEC;
+          const y = (maxPitch - note.pitch) * NOTE_HEIGHT;
+          const w = Math.max(2, (note.endTime - note.startTime) * PX_PER_SEC);
+          rect.setAttribute("x", x);
+          rect.setAttribute("y", y + 0.5);
+          rect.setAttribute("width", w);
+          rect.setAttribute("height", NOTE_HEIGHT - 1);
+          rect.setAttribute("rx", 1.5);
+          const baseFill = melody ? MELODY_COLOR : CHORD_COLOR;
+          rect.setAttribute("fill", baseFill);
+          rect.dataset.role = melody ? "melody" : "chord";
+          svg.appendChild(rect);
+          noteEntries.push({
+            rect, baseFill,
+            startTime: note.startTime,
+            endTime: note.endTime,
+            pitch: note.pitch,
+            velocity: (note.velocity ?? 80) / 127,
+            durationSec: note.endTime - note.startTime,
+          });
+        });
+
+        scroll.appendChild(svg);
+        viewport.removeChild(loading);
+        viewport.appendChild(scroll);
+
+        // Playhead
         const playhead = document.createElement("div");
-        playhead.className = "midi-roll-playhead";
-
-        viewport.appendChild(visualizer);
+        playhead.className = "midi-playhead";
         viewport.appendChild(playhead);
 
-        const player = document.createElement("midi-player");
-        player.setAttribute("src", src);
-        player.setAttribute("sound-font", "");
-        player.setAttribute("visualizer", `#${vizId}`);
+        // Transport
+        const transport = document.createElement("div");
+        transport.className = "midi-transport";
+        const playBtn = document.createElement("button");
+        playBtn.type = "button";
+        playBtn.className = "btn btn-primary midi-play-btn";
+        playBtn.innerHTML = '<i class="bi bi-play-fill"></i>';
+        const timeLabel = document.createElement("span");
+        timeLabel.className = "midi-time";
+        timeLabel.textContent = `0:00 / ${formatTime(totalTime)}`;
+        const seekBar = document.createElement("input");
+        seekBar.type = "range";
+        seekBar.min = 0; seekBar.max = totalTime; seekBar.step = 0.01;
+        seekBar.value = 0;
+        seekBar.className = "midi-seek";
+        transport.appendChild(playBtn);
+        transport.appendChild(timeLabel);
+        transport.appendChild(seekBar);
 
-        // Horizontal scroll container (inside the visualizer's light DOM, created by Magenta).
-        let scrollEl = null;
-        let rafId = null;
-
-        function getScrollEl() {
-          if (scrollEl) return scrollEl;
-          scrollEl = visualizer.querySelector(".piano-roll-visualizer");
-          return scrollEl;
-        }
-
-        function updatePlayhead() {
-          const ns = visualizer.noteSequence;
-          const duration = ns && ns.totalTime;
-          const svg = visualizer.querySelector("svg");
-          const sc = getScrollEl();
-          if (duration && svg && sc) {
-            const svgWidth = svg.getBoundingClientRect().width;
-            const fraction = Math.max(0, Math.min(1, (player.currentTime || 0) / duration));
-            const xInSvg = fraction * svgWidth;
-            const xOnScreen = xInSvg - sc.scrollLeft;
-            playhead.style.left = `${xOnScreen}px`;
-          }
-          if (viewport.classList.contains("playing")) {
-            rafId = requestAnimationFrame(updatePlayhead);
-          }
-        }
-
-        // The <midi-visualizer> element never fires a "load" event; only
-        // <midi-player> does. Magenta also re-renders the SVG whenever the
-        // player forces a reload (on play start if noteSequences differ).
-        // So we:
-        //   (a) attach scroll/seek listeners ONCE to the wrapper (persists
-        //       across reloads — Magenta only clears its innerHTML),
-        //   (b) re-run tagNoteRoles every time the rect count changes.
-        let wrapperListenersAttached = false;
-        let lastRectCount = 0;
-
-        function attachWrapperListeners() {
-          const sc = getScrollEl();
-          if (!sc || wrapperListenersAttached) return;
-          wrapperListenersAttached = true;
-
-          // Mouse wheel pans horizontally
-          sc.addEventListener("wheel", (event) => {
-            const dx = Math.abs(event.deltaX);
-            const dy = Math.abs(event.deltaY);
-            if (dy > dx) {
-              sc.scrollLeft += event.deltaY;
-              event.preventDefault();
-            }
-          }, { passive: false });
-
-          // Unified pointer handling: drag to pan, click to seek.
-          // Distinguish them by movement distance.
-          let pointerDown = false;
-          let pointerStartX = 0;
-          let pointerStartY = 0;
-          let dragStartScroll = 0;
-          let moved = false;
-          const DRAG_THRESHOLD = 4;
-
-          sc.addEventListener("pointerdown", (event) => {
-            if (event.button !== 0) return;
-            pointerDown = true;
-            moved = false;
-            pointerStartX = event.clientX;
-            pointerStartY = event.clientY;
-            dragStartScroll = sc.scrollLeft;
-          });
-          sc.addEventListener("pointermove", (event) => {
-            if (!pointerDown) return;
-            const dx = event.clientX - pointerStartX;
-            const dy = event.clientY - pointerStartY;
-            if (!moved && Math.hypot(dx, dy) > DRAG_THRESHOLD) {
-              moved = true;
-              sc.setPointerCapture(event.pointerId);
-              sc.style.cursor = "grabbing";
-            }
-            if (moved) {
-              sc.scrollLeft = dragStartScroll - dx;
-            }
-          });
-          function finishPointer(event) {
-            if (!pointerDown) return;
-            pointerDown = false;
-            sc.style.cursor = "";
-            if (moved) return;
-            // Treat as a click-to-seek (no drag occurred)
-            const ns = visualizer.noteSequence;
-            const svg = sc.querySelector("svg");
-            if (!ns || !ns.totalTime || !svg) return;
-            const svgRect = svg.getBoundingClientRect();
-            const fraction = Math.max(0, Math.min(1,
-              (event.clientX - svgRect.left) / svgRect.width));
-            player.currentTime = fraction * ns.totalTime;
-          }
-          sc.addEventListener("pointerup", finishPointer);
-          sc.addEventListener("pointercancel", () => { pointerDown = false; moved = false; sc.style.cursor = ""; });
-        }
-
-        function refreshVisualizerHooks() {
-          const rects = visualizer.querySelectorAll("svg rect.note");
-          if (!rects.length) return;
-          attachWrapperListeners();
-          if (rects.length !== lastRectCount) {
-            lastRectCount = rects.length;
-            tagNoteRoles(visualizer);
-          }
-        }
-
-        const mo = new MutationObserver(refreshVisualizerHooks);
-        mo.observe(visualizer, { childList: true, subtree: true });
-        refreshVisualizerHooks();
-
-        // The library forwards `note`/`start`/`stop` from player → visualizer.
-        // After the library's own redraw runs, we override the active rect(s)
-        // so the emphasis is unmistakable and uses our palette.
-        const activeRects = new Set();
-        function clearActiveRects() {
-          activeRects.forEach((rect) => {
-            rect.classList.remove("playing-now");
-            const base = rect.dataset.baseFill;
-            if (base) rect.setAttribute("fill", base);
-          });
-          activeRects.clear();
-        }
-        visualizer.addEventListener("note", (event) => {
-          const note = event.detail && event.detail.note;
-          if (!note) return;
-          // Wait one frame so the library's `redraw` has already run.
-          requestAnimationFrame(() => {
-            clearActiveRects();
-            const svg = visualizer.querySelector("svg");
-            if (!svg) return;
-            const rects = svg.querySelectorAll("rect.active");
-            rects.forEach((rect) => {
-              rect.setAttribute("fill", ACTIVE_COLOR);
-              rect.classList.add("playing-now");
-              activeRects.add(rect);
-            });
-          });
-        });
-        visualizer.addEventListener("stop", clearActiveRects);
-
-        player.addEventListener("start", () => {
-          viewport.classList.add("playing");
-          document.querySelectorAll("audio").forEach((a) => a.pause());
-          document.querySelectorAll("midi-player").forEach((p) => {
-            if (p !== player) p.stop();
-          });
-          cancelAnimationFrame(rafId);
-          rafId = requestAnimationFrame(updatePlayhead);
-        });
-        player.addEventListener("stop", () => {
-          viewport.classList.remove("playing");
-          cancelAnimationFrame(rafId);
-          clearActiveRects();
-        });
-
+        // Legend
         const legend = document.createElement("div");
-        legend.className = "midi-demo-legend";
+        legend.className = "midi-legend";
         legend.innerHTML = `
-          <span><i style="background:#e0453e"></i>Melody</span>
-          <span><i style="background:#6366f1"></i>Chord</span>
-          <span><i style="background:#facc15;border:1px solid #7c2d12"></i>Playing</span>
+          <span><i style="background:${MELODY_COLOR}"></i>Melody</span>
+          <span><i style="background:${CHORD_COLOR}"></i>Chord</span>
+          <span><i style="background:${ACTIVE_COLOR};border:1px solid #b45309"></i>Playing</span>
         `;
 
         const footer = document.createElement("div");
@@ -696,11 +565,240 @@
         footer.appendChild(downloadLink);
 
         card.appendChild(legend);
-        card.appendChild(viewport);
-        card.appendChild(player);
+        card.appendChild(transport);
         card.appendChild(footer);
 
-        return player;
+        // ===== Playback state =====
+        let currentTime = 0;
+        let playing = false;
+        let anchorPerf = 0; // performance.now()/1000 at currentTime=0
+        let scheduledEvents = []; // Tone.js event ids
+        let rafId = null;
+        const activeNotes = new Set();
+
+        function clearHighlights() {
+          activeNotes.forEach((e) => {
+            e.rect.setAttribute("fill", e.baseFill);
+            e.rect.classList.remove("midi-note-playing");
+          });
+          activeNotes.clear();
+        }
+
+        function updatePlayhead() {
+          const xInSvg = currentTime * PX_PER_SEC;
+          const xOnScreen = xInSvg - scroll.scrollLeft;
+          playhead.style.left = `${xOnScreen}px`;
+        }
+
+        function updateUI() {
+          seekBar.value = currentTime;
+          timeLabel.textContent = `${formatTime(currentTime)} / ${formatTime(totalTime)}`;
+          updatePlayhead();
+        }
+
+        function autoScrollIfNeeded() {
+          if (!playing) return;
+          const xNow = currentTime * PX_PER_SEC;
+          const viewLeft = scroll.scrollLeft;
+          const viewRight = viewLeft + scroll.clientWidth;
+          if (xNow < viewLeft + 40 || xNow > viewRight - 60) {
+            scroll.scrollLeft = Math.max(0, xNow - scroll.clientWidth * 0.25);
+          }
+        }
+
+        function tick() {
+          if (!playing) return;
+          const nowSec = performance.now() / 1000;
+          currentTime = nowSec - anchorPerf;
+          if (currentTime >= totalTime) {
+            currentTime = totalTime;
+            updateUI();
+            stop(true);
+            return;
+          }
+          // Update highlights
+          const nextActive = new Set();
+          noteEntries.forEach((e) => {
+            if (currentTime >= e.startTime && currentTime <= e.endTime) {
+              nextActive.add(e);
+            }
+          });
+          nextActive.forEach((e) => {
+            if (!activeNotes.has(e)) {
+              e.rect.setAttribute("fill", ACTIVE_COLOR);
+              e.rect.classList.add("midi-note-playing");
+              activeNotes.add(e);
+            }
+          });
+          Array.from(activeNotes).forEach((e) => {
+            if (!nextActive.has(e)) {
+              e.rect.setAttribute("fill", e.baseFill);
+              e.rect.classList.remove("midi-note-playing");
+              activeNotes.delete(e);
+            }
+          });
+          autoScrollIfNeeded();
+          updateUI();
+          rafId = requestAnimationFrame(tick);
+        }
+
+        async function play() {
+          if (playing) return;
+          if (activePlayerController && activePlayerController !== controller) {
+            activePlayerController.stop();
+          }
+          activePlayerController = controller;
+          // Pause any native <audio> elements on the page
+          document.querySelectorAll("audio").forEach((a) => a.pause());
+
+          playBtn.disabled = true;
+          const synth = await getPianoSynth();
+          playBtn.disabled = false;
+          if (!playing === false) { /* may have been cancelled */ }
+
+          playing = true;
+          anchorPerf = performance.now() / 1000 - currentTime;
+          playBtn.innerHTML = '<i class="bi bi-pause-fill"></i>';
+          viewport.classList.add("playing");
+
+          // Schedule all upcoming notes relative to the audio clock
+          const toneNow = Tone.now();
+          scheduledEvents = [];
+          noteEntries.forEach((e) => {
+            if (e.endTime <= currentTime) return;
+            const startOffset = Math.max(0, e.startTime - currentTime);
+            const clippedDuration = e.endTime - Math.max(e.startTime, currentTime);
+            if (clippedDuration <= 0) return;
+            synth.triggerAttackRelease(
+              pitchToName(e.pitch),
+              clippedDuration,
+              toneNow + startOffset,
+              e.velocity
+            );
+          });
+
+          cancelAnimationFrame(rafId);
+          rafId = requestAnimationFrame(tick);
+        }
+
+        function pause() {
+          if (!playing) return;
+          playing = false;
+          viewport.classList.remove("playing");
+          cancelAnimationFrame(rafId);
+          currentTime = performance.now() / 1000 - anchorPerf;
+          if (currentTime > totalTime) currentTime = totalTime;
+          // Silence any in-flight notes
+          if (pianoSynthPromise) pianoSynthPromise.then((s) => s.releaseAll());
+          clearHighlights();
+          playBtn.innerHTML = '<i class="bi bi-play-fill"></i>';
+          updateUI();
+        }
+
+        function stop(finished) {
+          if (playing) {
+            playing = false;
+            viewport.classList.remove("playing");
+            cancelAnimationFrame(rafId);
+            if (pianoSynthPromise) pianoSynthPromise.then((s) => s.releaseAll());
+            clearHighlights();
+            playBtn.innerHTML = '<i class="bi bi-play-fill"></i>';
+          }
+          if (finished) currentTime = 0;
+          updateUI();
+        }
+
+        function seek(newTime) {
+          newTime = Math.max(0, Math.min(newTime, totalTime));
+          const wasPlaying = playing;
+          if (wasPlaying) {
+            // Cancel scheduled future notes
+            if (pianoSynthPromise) pianoSynthPromise.then((s) => s.releaseAll());
+            playing = false;
+            cancelAnimationFrame(rafId);
+          }
+          currentTime = newTime;
+          clearHighlights();
+          updateUI();
+          if (wasPlaying) play();
+        }
+
+        // === Controls ===
+        playBtn.addEventListener("click", () => {
+          if (playing) pause(); else play();
+        });
+
+        // Range input seek (live while dragging)
+        let seekBarPauseResume = false;
+        seekBar.addEventListener("mousedown", () => {
+          if (playing) { seekBarPauseResume = true; pause(); }
+        });
+        seekBar.addEventListener("input", () => {
+          currentTime = Number(seekBar.value) || 0;
+          clearHighlights();
+          updateUI();
+        });
+        seekBar.addEventListener("change", () => {
+          const wasResume = seekBarPauseResume;
+          seekBarPauseResume = false;
+          if (wasResume) play();
+        });
+
+        // Click / drag on piano roll
+        let pointerDown = false;
+        let pointerStartX = 0;
+        let dragStartScroll = 0;
+        let moved = false;
+        const DRAG_THRESHOLD = 4;
+
+        scroll.addEventListener("pointerdown", (event) => {
+          if (event.button !== 0) return;
+          pointerDown = true;
+          moved = false;
+          pointerStartX = event.clientX;
+          dragStartScroll = scroll.scrollLeft;
+        });
+        scroll.addEventListener("pointermove", (event) => {
+          if (!pointerDown) return;
+          const dx = event.clientX - pointerStartX;
+          if (!moved && Math.abs(dx) > DRAG_THRESHOLD) {
+            moved = true;
+            scroll.setPointerCapture(event.pointerId);
+            scroll.style.cursor = "grabbing";
+          }
+          if (moved) scroll.scrollLeft = dragStartScroll - dx;
+        });
+        function finishPointer(event) {
+          if (!pointerDown) return;
+          pointerDown = false;
+          scroll.style.cursor = "";
+          if (moved) { updatePlayhead(); return; }
+          // Treat as click-to-seek
+          const svgRect = svg.getBoundingClientRect();
+          const xInSvg = (event.clientX - svgRect.left);
+          if (xInSvg < 0) return;
+          const fraction = Math.max(0, Math.min(1, xInSvg / svgRect.width));
+          seek(fraction * totalTime);
+        }
+        scroll.addEventListener("pointerup", finishPointer);
+        scroll.addEventListener("pointercancel", () => { pointerDown = false; moved = false; scroll.style.cursor = ""; });
+
+        // Wheel: vertical → horizontal scroll
+        scroll.addEventListener("wheel", (event) => {
+          const dx = Math.abs(event.deltaX);
+          const dy = Math.abs(event.deltaY);
+          if (dy > dx) {
+            scroll.scrollLeft += event.deltaY;
+            event.preventDefault();
+          }
+        }, { passive: false });
+
+        scroll.addEventListener("scroll", updatePlayhead);
+
+        updateUI();
+
+        const controller = { play, pause, stop, seek };
+        return controller;
       }
 
       function makeMidiCell(midiPath) {
@@ -725,15 +823,20 @@
         card.className = "midi-demo-card";
         card.hidden = true;
 
-        let player = null;
+        let controller = null;
+        let mounting = null;
 
-        trigger.addEventListener("click", () => {
+        trigger.addEventListener("click", async () => {
           if (card.hidden) {
-            if (!player) player = mountMidiPlayer(card, midiPath);
             card.hidden = false;
             trigger.innerHTML = '<i class="bi bi-eye-slash"></i> Hide MIDI player';
+            if (!controller && !mounting) {
+              mounting = mountMidiPlayer(card, midiPath);
+              controller = await mounting;
+              mounting = null;
+            }
           } else {
-            if (player && typeof player.stop === "function") player.stop();
+            if (controller && typeof controller.stop === "function") controller.stop();
             card.hidden = true;
             trigger.innerHTML = '<i class="bi bi-music-note-beamed"></i> Show MIDI player';
           }
