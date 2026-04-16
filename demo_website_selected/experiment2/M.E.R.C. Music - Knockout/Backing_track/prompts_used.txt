@@ -1,8 +1,0 @@
-inference_script=MuseControlLite/MuseControlLite_inference_47s_scale_up.py
-fallback_text_prompt=acoustic guitar, country music
-
-[text_prompts]
-1	acoustic guitar, country music
-2	jazzy piano, with an exciting vibe, trumpet, drums
-3	energetic pop rock with electric guitars, bass, and upbeat drums.
-4	metal band
