@@ -8,21 +8,21 @@
       "start_s": 0.0,
       "end_s": 30.23,
       "tag": "intro",
-      "prompt": "A calm, peaceful open with fingerpicked acoustic guitar, harmonica, and a gentle, relaxed, nostalgic summer feel."
+      "prompt": "Soft synthesizer pads open slowly, ethereal and tranquil, meditative and dreamy, a gentle wash of sound with no rhythm yet."
     },
     {
       "index": 1,
       "start_s": 30.23,
       "end_s": 73.85,
       "tag": "verse",
-      "prompt": "Mellow and sentimental acoustic folk with acoustic guitar, fiddle, banjo, and a warm, reflective, melancholic yet hopeful tone."
+      "prompt": "A subtle drum machine beat enters beneath the synth pads, bass synthesizer pulses gently, calm and chillout, soothing and relaxed with a peaceful, floating atmosphere."
     },
     {
       "index": 2,
       "start_s": 73.85,
       "end_s": 106.23065759637188,
       "tag": "chorus",
-      "prompt": "Cheerful, energetic, and danceable country with driving drums, banjo, fiddle, electric guitar, and a joyful, uplifting, confident groove."
+      "prompt": "Synthesizer leads rise over the pads and beat, drum machine intensifies slightly, bass drives with more energy, uplifting and danceable, electronic and dreamy with an inspiring, euphoric surge."
     }
   ]
 }
