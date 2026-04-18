@@ -779,7 +779,7 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
           border: 1px solid rgba(0,0,0,0.15);
           padding: 10px;
           vertical-align: top;
-          min-width: 320px;
+          min-width: 380px;
         `;
         const audio = document.createElement("audio");
         audio.controls = true;
@@ -788,7 +788,15 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
         audio.src = audioSrc(audioPath);
         td.appendChild(audio);
 
+        const trigger = document.createElement("button");
+        trigger.type = "button";
+        trigger.className = "btn btn-sm btn-outline-secondary";
+        trigger.style.cssText = "margin-top: 8px; font-size: 12px;";
+        trigger.innerHTML = '<i class="bi bi-chat-left-text"></i> Show structure prompts';
+        td.appendChild(trigger);
+
         const promptBox = document.createElement("pre");
+        promptBox.hidden = true;
         promptBox.style.cssText = `
           margin: 8px 0 0; padding: 8px 10px;
           background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;
@@ -797,24 +805,38 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
           white-space: pre-wrap; word-break: break-word;
           max-height: 220px; overflow-y: auto;
         `;
-        promptBox.textContent = "Loading structure prompts…";
         td.appendChild(promptBox);
 
-        fetch(audioSrc(promptsJsonPath))
-          .then((r) => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
-          .then((data) => {
-            const segs = Array.isArray(data.segments) ? data.segments : [];
-            if (!segs.length) {
-              promptBox.textContent = "(no structure prompts found)";
-              return;
-            }
-            promptBox.textContent = segs
-              .map((s) => `[${s.tag || `seg${s.index}`}]\n${s.prompt || ""}`)
-              .join("\n");
-          })
-          .catch((err) => {
-            promptBox.textContent = `Failed to load structure prompts (${err.message})`;
-          });
+        let loaded = false;
+        let loading = null;
+        function loadPrompts() {
+          if (loaded || loading) return loading;
+          promptBox.textContent = "Loading structure prompts…";
+          loading = fetch(audioSrc(promptsJsonPath))
+            .then((r) => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
+            .then((data) => {
+              const segs = Array.isArray(data.segments) ? data.segments : [];
+              promptBox.textContent = segs.length
+                ? segs.map((s) => `[${s.tag || `seg${s.index}`}]\n${s.prompt || ""}`).join("\n")
+                : "(no structure prompts found)";
+              loaded = true;
+            })
+            .catch((err) => {
+              promptBox.textContent = `Failed to load structure prompts (${err.message})`;
+            });
+          return loading;
+        }
+
+        trigger.addEventListener("click", () => {
+          if (promptBox.hidden) {
+            promptBox.hidden = false;
+            trigger.innerHTML = '<i class="bi bi-eye-slash"></i> Hide structure prompts';
+            loadPrompts();
+          } else {
+            promptBox.hidden = true;
+            trigger.innerHTML = '<i class="bi bi-chat-left-text"></i> Show structure prompts';
+          }
+        });
 
         return td;
       }
