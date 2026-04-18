@@ -220,11 +220,586 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
 </div>
 
 <!-- =======================
+     Experiment 1 — with Groundtruth Vocal MIDI (7 columns: Vocal + prompt, GT MIDI, Detected MIDI, TTM, Audio-SAG, MIDI-SAG w/ gt, MIDI-SAG w/o gt)
+     ======================= -->
+<div class="container my-4">
+  <section id="audio-samples-exp1" style="margin: 32px 0;">
+    <h2 style="margin: 0 0 10px;">1. Experiment 1: MIDI-SAG with Groundtruth Vocal MIDI</h2>
+    <p style="margin: 0 0 18px; opacity: 0.8; line-height: 1.4;">
+      Each row uses one vocal input and its paired accompaniment text prompt. Columns compare the vocal + prompt, the ground-truth vocal MIDI with chord, the detected vocal MIDI with chord, a text-to-music (TTM) baseline, Audio-SAG, MIDI-SAG with ground-truth vocal MIDI, and MIDI-SAG without ground-truth vocal MIDI (using the detected MIDI).
+    </p>
+
+    <div id="audio-table-exp1-wrap" class="table-responsive drag-scroll">
+      <table id="audio-table-exp1" class="table table-sm table-bordered align-middle mb-0">
+        <thead></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <script type="module">
+      const EXP1_COLUMNS = [
+        { label: "Vocal input + text prompt" },
+        { label: "Ground-truth vocal MIDI + chord", desc: "Playable MIDI rendered with a browser synth" },
+        { label: "Detected vocal MIDI + chord", desc: "Playable MIDI rendered with a browser synth" },
+        { label: "TTM (text-to-music)", desc: "Baseline generated from the text prompt only" },
+        { label: "Audio-SAG", desc: "Accompaniment conditioned on vocal audio + text prompt" },
+        { label: "MIDI-SAG w/ GT vocal MIDI", desc: "Conditioned on ground-truth vocal MIDI + chord + text prompt" },
+        { label: "MIDI-SAG w/o GT vocal MIDI", desc: "Conditioned on detected vocal MIDI + chord + text prompt" },
+      ];
+
+      const EXP1_PROMPTS = [
+        { idx: "01", text: "Reflective instrumental pop with piano, synth pad, bass and steady drums.",
+          slug: "reflective_instrumental_pop_with_piano_synth_pad_bass_and_steady_drums" },
+        { idx: "02", text: "Groovy funk with bass guitar, electric guitar, drums, and electric piano.",
+          slug: "groovy_funk_with_bass_guitar_electric_guitar_drums_and_electric_piano" },
+        { idx: "03", text: "Intense instrumental rock with electric guitar riffs, bass guitar, drums, and power.",
+          slug: "intense_instrumental_rock_with_electric_guitar_riffs_bass_guitar_drums_and_power" },
+        { idx: "04", text: "Melancholic electronic backing with piano, bass, reflective synth textures, and instrumental pop.",
+          slug: "melancholic_electronic_backing_with_piano_bass_reflective_synth_textures_and_ins" },
+      ];
+
+      const EXP1_SONGS = [
+        "刀剑如梦-周华健-134-F",
+        "小手拉大手-梁靜茹-130-C大调",
+        "爱在夏天-告五人-75-Db大调",
+        "简单爱-周杰伦-97-C",
+      ];
+
+      const EXP1_BASE = "./demo_website_selected/experiment_1";
+
+      const EXP1_ROWS = EXP1_SONGS.map((song, i) => {
+        const p = EXP1_PROMPTS[i];
+        const mixFile = `mixed_${song}_prompt_${p.idx}_${p.slug}.wav`;
+        return {
+          title: song,
+          prompt: p.text,
+          vocal: `${EXP1_BASE}/gt_vocal_MIDI/${song}.wav`,
+          gtMidi: `${EXP1_BASE}/${song}/Harmonization_results/chord_gen_filled_empty/${song}_chord_gen_filled_empty_bars.mid`,
+          detectedMidi: `${EXP1_BASE}/${song}-detected/Harmonization_results/chord_gen_filled_empty/${song}_chord_gen_filled_empty_bars.mid`,
+          ttm: `${EXP1_BASE}/${song}_TTMtext_7.0_con_1.5/${mixFile}`,
+          audioSag: `${EXP1_BASE}/${song}_vocal_audiotext_7.0_con_1.5/${mixFile}`,
+          midiSagGt: `${EXP1_BASE}/${song}/Backing_track/text_7.0_con_1.5/${mixFile}`,
+          midiSagDetected: `${EXP1_BASE}/${song}-detected/Backing_track/text_7.0_con_1.5/${mixFile}`,
+        };
+      });
+
+      const mm = window.core;
+      const MELODY_COLOR = "#dc2626";
+      const CHORD_COLOR = "#4f46e5";
+      const ACTIVE_COLOR = "#facc15";
+      const PX_PER_SEC = 60;
+      const NOTE_HEIGHT = 5;
+
+      let pianoSynthPromise = null;
+      function getPianoSynth() {
+        if (pianoSynthPromise) return pianoSynthPromise;
+        pianoSynthPromise = (async () => {
+          await Tone.start();
+          const synth = new Tone.Sampler({
+            urls: {
+              "A0":"A0.mp3","C1":"C1.mp3","D#1":"Ds1.mp3","F#1":"Fs1.mp3",
+              "A1":"A1.mp3","C2":"C2.mp3","D#2":"Ds2.mp3","F#2":"Fs2.mp3",
+              "A2":"A2.mp3","C3":"C3.mp3","D#3":"Ds3.mp3","F#3":"Fs3.mp3",
+              "A3":"A3.mp3","C4":"C4.mp3","D#4":"Ds4.mp3","F#4":"Fs4.mp3",
+              "A4":"A4.mp3","C5":"C5.mp3","D#5":"Ds5.mp3","F#5":"Fs5.mp3",
+              "A5":"A5.mp3","C6":"C6.mp3","D#6":"Ds6.mp3","F#6":"Fs6.mp3",
+              "A6":"A6.mp3","C7":"C7.mp3","D#7":"Ds7.mp3","F#7":"Fs7.mp3",
+              "A7":"A7.mp3","C8":"C8.mp3",
+            },
+            baseUrl: "https://tonejs.github.io/audio/salamander/",
+            release: 1,
+          }).toDestination();
+          await Tone.loaded();
+          return synth;
+        })();
+        return pianoSynthPromise;
+      }
+
+      let activePlayerController = null;
+      let activeSchedulingPart = null;
+
+      function audioSrc(path) { return encodeURI(path); }
+      function pitchToName(p) {
+        const names = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+        return `${names[p % 12]}${Math.floor(p / 12) - 1}`;
+      }
+      function formatTime(sec) {
+        sec = Math.max(0, sec || 0);
+        const m = Math.floor(sec / 60);
+        const s = Math.floor(sec % 60);
+        return `${m}:${s.toString().padStart(2, "0")}`;
+      }
+
+      function makeCellHeader(col) {
+        const th = document.createElement("th");
+        th.style.cssText = `
+          border: 1px solid rgba(0,0,0,0.15);
+          padding: 10px;
+          text-align: left;
+          vertical-align: top;
+          background: rgba(0,0,0,0.03);
+          min-width: 260px;
+        `;
+        const descHtml = col.desc
+          ? `<div style="font-size:12px; opacity:0.85; line-height:1.35;">${col.desc}</div>`
+          : "";
+        th.innerHTML = `
+          <div style="font-weight:700; font-size:13px; margin-bottom:6px;">${col.label}</div>
+          ${descHtml}
+        `;
+        return th;
+      }
+
+      function makeAudioCell(src, title = "", subtitle = "") {
+        const td = document.createElement("td");
+        td.style.cssText = `
+          border: 1px solid rgba(0,0,0,0.15);
+          padding: 10px;
+          vertical-align: top;
+          min-width: 260px;
+        `;
+        if (title) {
+          const label = document.createElement("div");
+          label.style.cssText = "font-weight: 600; margin-bottom: 6px; word-break: break-word;";
+          label.textContent = title;
+          td.appendChild(label);
+        }
+        if (subtitle) {
+          const sub = document.createElement("div");
+          sub.style.cssText = "font-size: 12px; opacity: 0.85; line-height: 1.35; margin-bottom: 8px;";
+          sub.textContent = subtitle;
+          td.appendChild(sub);
+        }
+        const audio = document.createElement("audio");
+        audio.controls = true;
+        audio.preload = "none";
+        audio.style.width = "100%";
+        audio.src = src;
+        td.appendChild(audio);
+        return td;
+      }
+
+      async function mountMidiPlayer(card, midiPath) {
+        const src = audioSrc(midiPath);
+        const viewport = document.createElement("div");
+        viewport.className = "midi-viewport";
+        const loading = document.createElement("div");
+        loading.style.cssText = "position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#64748b;font-size:13px;";
+        loading.textContent = "Loading MIDI…";
+        viewport.appendChild(loading);
+        card.appendChild(viewport);
+
+        let ns;
+        try {
+          ns = await mm.urlToNoteSequence(src);
+        } catch (err) {
+          loading.textContent = "Failed to load MIDI";
+          console.error(err);
+          return null;
+        }
+
+        const totalTime = Math.max(ns.totalTime || 0, 1);
+        const byInstr = new Map();
+        ns.notes.forEach((n) => {
+          const k = n.instrument ?? 0;
+          if (!byInstr.has(k)) byInstr.set(k, []);
+          byInstr.get(k).push(n.pitch);
+        });
+        let melodyInstr = null;
+        if (byInstr.size >= 2) {
+          let best = -Infinity;
+          byInstr.forEach((pitches, k) => {
+            const avg = pitches.reduce((a, b) => a + b, 0) / pitches.length;
+            if (avg > best) { best = avg; melodyInstr = k; }
+          });
+        }
+        const sorted = ns.notes.map((n) => n.pitch).sort((a, b) => a - b);
+        const melodyThreshold = sorted[Math.floor(sorted.length * 0.67)] ?? 60;
+        function isMelody(note) {
+          if (melodyInstr !== null) return (note.instrument ?? 0) === melodyInstr;
+          return note.pitch >= melodyThreshold;
+        }
+        const minPitch = sorted[0] ?? 48;
+        const maxPitch = sorted[sorted.length - 1] ?? 72;
+        const pitchRange = Math.max(1, maxPitch - minPitch + 1);
+        const rollHeight = Math.max(pitchRange * NOTE_HEIGHT, 120);
+        const rollWidth = Math.max(totalTime * PX_PER_SEC, 400);
+
+        const scroll = document.createElement("div");
+        scroll.className = "midi-roll-scroll";
+        const svgNS = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(svgNS, "svg");
+        svg.setAttribute("width", rollWidth);
+        svg.setAttribute("height", rollHeight);
+        svg.setAttribute("viewBox", `0 0 ${rollWidth} ${rollHeight}`);
+
+        for (let p = minPitch; p <= maxPitch; p++) {
+          const y = (maxPitch - p) * NOTE_HEIGHT;
+          const isBlack = [1,3,6,8,10].includes(((p % 12) + 12) % 12);
+          if (isBlack) {
+            const bg = document.createElementNS(svgNS, "rect");
+            bg.setAttribute("x", 0); bg.setAttribute("y", y);
+            bg.setAttribute("width", rollWidth); bg.setAttribute("height", NOTE_HEIGHT);
+            bg.setAttribute("fill", "#eef2ff");
+            svg.appendChild(bg);
+          }
+        }
+        for (let t = 0; t <= totalTime; t += 0.5) {
+          const x = Math.round(t * PX_PER_SEC);
+          const line = document.createElementNS(svgNS, "line");
+          line.setAttribute("x1", x); line.setAttribute("x2", x);
+          line.setAttribute("y1", 0); line.setAttribute("y2", rollHeight);
+          line.setAttribute("stroke", (t % 1 === 0) ? "#cbd5e1" : "#e2e8f0");
+          line.setAttribute("stroke-width", 1);
+          svg.appendChild(line);
+        }
+
+        const noteEntries = [];
+        ns.notes.forEach((note) => {
+          const melody = isMelody(note);
+          const rect = document.createElementNS(svgNS, "rect");
+          const x = note.startTime * PX_PER_SEC;
+          const y = (maxPitch - note.pitch) * NOTE_HEIGHT;
+          const w = Math.max(2, (note.endTime - note.startTime) * PX_PER_SEC);
+          rect.setAttribute("x", x);
+          rect.setAttribute("y", y + 0.5);
+          rect.setAttribute("width", w);
+          rect.setAttribute("height", NOTE_HEIGHT - 1);
+          rect.setAttribute("rx", 1.5);
+          const baseFill = melody ? MELODY_COLOR : CHORD_COLOR;
+          rect.setAttribute("fill", baseFill);
+          rect.dataset.role = melody ? "melody" : "chord";
+          svg.appendChild(rect);
+          noteEntries.push({
+            rect, baseFill,
+            startTime: note.startTime,
+            endTime: note.endTime,
+            pitch: note.pitch,
+            velocity: (note.velocity ?? 80) / 127,
+            durationSec: note.endTime - note.startTime,
+          });
+        });
+
+        scroll.appendChild(svg);
+        viewport.removeChild(loading);
+        viewport.appendChild(scroll);
+
+        const playhead = document.createElement("div");
+        playhead.className = "midi-playhead";
+        viewport.appendChild(playhead);
+
+        const transport = document.createElement("div");
+        transport.className = "midi-transport";
+        const playBtn = document.createElement("button");
+        playBtn.type = "button";
+        playBtn.className = "btn btn-primary midi-play-btn";
+        playBtn.innerHTML = '<i class="bi bi-play-fill"></i>';
+        const timeLabel = document.createElement("span");
+        timeLabel.className = "midi-time";
+        timeLabel.textContent = `0:00 / ${formatTime(totalTime)}`;
+        const seekBar = document.createElement("input");
+        seekBar.type = "range";
+        seekBar.min = 0; seekBar.max = totalTime; seekBar.step = 0.01;
+        seekBar.value = 0;
+        seekBar.className = "midi-seek";
+        transport.appendChild(playBtn);
+        transport.appendChild(timeLabel);
+        transport.appendChild(seekBar);
+
+        const legend = document.createElement("div");
+        legend.className = "midi-legend";
+        legend.innerHTML = `
+          <span><i style="background:${MELODY_COLOR}"></i>Melody</span>
+          <span><i style="background:${CHORD_COLOR}"></i>Chord</span>
+          <span><i style="background:${ACTIVE_COLOR};border:1px solid #b45309"></i>Playing</span>
+        `;
+
+        const footer = document.createElement("div");
+        footer.className = "midi-demo-footer";
+        const downloadLink = document.createElement("a");
+        downloadLink.className = "btn btn-sm btn-link p-0";
+        downloadLink.href = src;
+        downloadLink.textContent = "Download .mid";
+        downloadLink.setAttribute("download", "");
+        footer.appendChild(downloadLink);
+
+        card.appendChild(legend);
+        card.appendChild(transport);
+        card.appendChild(footer);
+
+        let currentTime = 0;
+        let playing = false;
+        let rafId = null;
+        const activeNotes = new Set();
+
+        const partEvents = noteEntries.map((e) => ({
+          time: e.startTime,
+          note: pitchToName(e.pitch),
+          duration: Math.max(0.01, e.durationSec),
+          velocity: e.velocity,
+        }));
+
+        function clearHighlights() {
+          activeNotes.forEach((e) => {
+            e.rect.setAttribute("fill", e.baseFill);
+            e.rect.classList.remove("midi-note-playing");
+          });
+          activeNotes.clear();
+        }
+        function updatePlayhead() {
+          const xInSvg = currentTime * PX_PER_SEC;
+          const xOnScreen = xInSvg - scroll.scrollLeft;
+          playhead.style.left = `${xOnScreen}px`;
+        }
+        function updateUI() {
+          seekBar.value = currentTime;
+          timeLabel.textContent = `${formatTime(currentTime)} / ${formatTime(totalTime)}`;
+          updatePlayhead();
+        }
+        function autoScrollIfNeeded() {
+          if (!playing) return;
+          const xNow = currentTime * PX_PER_SEC;
+          const viewLeft = scroll.scrollLeft;
+          const viewRight = viewLeft + scroll.clientWidth;
+          if (xNow < viewLeft + 40 || xNow > viewRight - 60) {
+            scroll.scrollLeft = Math.max(0, xNow - scroll.clientWidth * 0.25);
+          }
+        }
+        function disposeOwnPart() {
+          if (activeSchedulingPart && activeSchedulingPart._ownerController === controller) {
+            try { activeSchedulingPart.dispose(); } catch (_) {}
+            activeSchedulingPart = null;
+          }
+        }
+        function tick() {
+          if (!playing) return;
+          currentTime = Tone.Transport.seconds;
+          if (currentTime >= totalTime) {
+            currentTime = totalTime;
+            updateUI();
+            stop(true);
+            return;
+          }
+          const nextActive = new Set();
+          noteEntries.forEach((e) => {
+            if (currentTime >= e.startTime && currentTime <= e.endTime) nextActive.add(e);
+          });
+          nextActive.forEach((e) => {
+            if (!activeNotes.has(e)) {
+              e.rect.setAttribute("fill", ACTIVE_COLOR);
+              e.rect.classList.add("midi-note-playing");
+              activeNotes.add(e);
+            }
+          });
+          Array.from(activeNotes).forEach((e) => {
+            if (!nextActive.has(e)) {
+              e.rect.setAttribute("fill", e.baseFill);
+              e.rect.classList.remove("midi-note-playing");
+              activeNotes.delete(e);
+            }
+          });
+          autoScrollIfNeeded();
+          updateUI();
+          rafId = requestAnimationFrame(tick);
+        }
+        async function play() {
+          if (playing) return;
+          if (activePlayerController && activePlayerController !== controller) {
+            activePlayerController.stop();
+          }
+          if (activeSchedulingPart) {
+            try { activeSchedulingPart.dispose(); } catch (_) {}
+            activeSchedulingPart = null;
+            Tone.Transport.stop();
+            Tone.Transport.cancel();
+          }
+          activePlayerController = controller;
+          document.querySelectorAll("audio").forEach((a) => a.pause());
+          playBtn.disabled = true;
+          const synth = await getPianoSynth();
+          playBtn.disabled = false;
+          const part = new Tone.Part((time, ev) => {
+            synth.triggerAttackRelease(ev.note, ev.duration, time, ev.velocity);
+          }, partEvents);
+          part._ownerController = controller;
+          part.start(0);
+          activeSchedulingPart = part;
+          playing = true;
+          playBtn.innerHTML = '<i class="bi bi-pause-fill"></i>';
+          viewport.classList.add("playing");
+          Tone.Transport.seconds = currentTime;
+          Tone.Transport.start();
+          cancelAnimationFrame(rafId);
+          rafId = requestAnimationFrame(tick);
+        }
+        function pause() {
+          if (!playing) return;
+          playing = false;
+          viewport.classList.remove("playing");
+          cancelAnimationFrame(rafId);
+          Tone.Transport.pause();
+          currentTime = Tone.Transport.seconds;
+          if (currentTime > totalTime) currentTime = totalTime;
+          disposeOwnPart();
+          Tone.Transport.cancel();
+          clearHighlights();
+          playBtn.innerHTML = '<i class="bi bi-play-fill"></i>';
+          updateUI();
+        }
+        function stop(finished) {
+          if (playing) {
+            playing = false;
+            viewport.classList.remove("playing");
+            cancelAnimationFrame(rafId);
+            Tone.Transport.stop();
+            disposeOwnPart();
+            Tone.Transport.cancel();
+            clearHighlights();
+            playBtn.innerHTML = '<i class="bi bi-play-fill"></i>';
+          }
+          if (finished) {
+            currentTime = 0;
+            Tone.Transport.seconds = 0;
+          }
+          updateUI();
+        }
+        function seek(newTime) {
+          newTime = Math.max(0, Math.min(newTime, totalTime));
+          const wasPlaying = playing;
+          if (wasPlaying) pause();
+          currentTime = newTime;
+          clearHighlights();
+          updateUI();
+          if (wasPlaying) play();
+        }
+        playBtn.addEventListener("click", () => { if (playing) pause(); else play(); });
+        let seekBarPauseResume = false;
+        seekBar.addEventListener("mousedown", () => { if (playing) { seekBarPauseResume = true; pause(); } });
+        seekBar.addEventListener("input", () => {
+          currentTime = Number(seekBar.value) || 0;
+          clearHighlights();
+          updateUI();
+        });
+        seekBar.addEventListener("change", () => {
+          const wasResume = seekBarPauseResume;
+          seekBarPauseResume = false;
+          if (wasResume) play();
+        });
+        let pointerDown = false;
+        let pointerStartX = 0;
+        let dragStartScroll = 0;
+        let moved = false;
+        const DRAG_THRESHOLD = 4;
+        scroll.addEventListener("pointerdown", (event) => {
+          if (event.button !== 0) return;
+          pointerDown = true;
+          moved = false;
+          pointerStartX = event.clientX;
+          dragStartScroll = scroll.scrollLeft;
+        });
+        scroll.addEventListener("pointermove", (event) => {
+          if (!pointerDown) return;
+          const dx = event.clientX - pointerStartX;
+          if (!moved && Math.abs(dx) > DRAG_THRESHOLD) {
+            moved = true;
+            scroll.setPointerCapture(event.pointerId);
+            scroll.style.cursor = "grabbing";
+          }
+          if (moved) scroll.scrollLeft = dragStartScroll - dx;
+        });
+        function finishPointer(event) {
+          if (!pointerDown) return;
+          pointerDown = false;
+          scroll.style.cursor = "";
+          if (moved) { updatePlayhead(); return; }
+          const svgRect = svg.getBoundingClientRect();
+          const xInSvg = (event.clientX - svgRect.left);
+          if (xInSvg < 0) return;
+          const fraction = Math.max(0, Math.min(1, xInSvg / svgRect.width));
+          seek(fraction * totalTime);
+        }
+        scroll.addEventListener("pointerup", finishPointer);
+        scroll.addEventListener("pointercancel", () => { pointerDown = false; moved = false; scroll.style.cursor = ""; });
+        scroll.addEventListener("wheel", (event) => {
+          const dx = Math.abs(event.deltaX);
+          const dy = Math.abs(event.deltaY);
+          if (dy > dx) { scroll.scrollLeft += event.deltaY; event.preventDefault(); }
+        }, { passive: false });
+        scroll.addEventListener("scroll", updatePlayhead);
+        updateUI();
+        const controller = { play, pause, stop, seek };
+        return controller;
+      }
+
+      function makeMidiCell(midiPath) {
+        const td = document.createElement("td");
+        td.style.cssText = `
+          border: 1px solid rgba(0,0,0,0.15);
+          padding: 10px;
+          vertical-align: top;
+          min-width: 320px;
+          text-align: left;
+        `;
+        const cell = document.createElement("div");
+        cell.className = "midi-demo-cell";
+        const trigger = document.createElement("button");
+        trigger.type = "button";
+        trigger.className = "btn btn-sm btn-outline-primary midi-demo-trigger";
+        trigger.innerHTML = '<i class="bi bi-music-note-beamed"></i> Show MIDI player';
+        const card = document.createElement("div");
+        card.className = "midi-demo-card";
+        card.hidden = true;
+        let controller = null;
+        let mounting = null;
+        trigger.addEventListener("click", async () => {
+          if (card.hidden) {
+            card.hidden = false;
+            trigger.innerHTML = '<i class="bi bi-eye-slash"></i> Hide MIDI player';
+            if (!controller && !mounting) {
+              mounting = mountMidiPlayer(card, midiPath);
+              controller = await mounting;
+              mounting = null;
+            }
+          } else {
+            if (controller && typeof controller.stop === "function") controller.stop();
+            card.hidden = true;
+            trigger.innerHTML = '<i class="bi bi-music-note-beamed"></i> Show MIDI player';
+          }
+        });
+        cell.appendChild(trigger);
+        cell.appendChild(card);
+        td.appendChild(cell);
+        return td;
+      }
+
+      const thead = document.querySelector("#audio-table-exp1 thead");
+      const tbody = document.querySelector("#audio-table-exp1 tbody");
+
+      const headerRow = document.createElement("tr");
+      EXP1_COLUMNS.forEach((col) => headerRow.appendChild(makeCellHeader(col)));
+      thead.appendChild(headerRow);
+
+      EXP1_ROWS.forEach((row) => {
+        const tr = document.createElement("tr");
+        tr.appendChild(makeAudioCell(audioSrc(row.vocal), row.title, row.prompt));
+        tr.appendChild(makeMidiCell(row.gtMidi));
+        tr.appendChild(makeMidiCell(row.detectedMidi));
+        tr.appendChild(makeAudioCell(audioSrc(row.ttm)));
+        tr.appendChild(makeAudioCell(audioSrc(row.audioSag)));
+        tr.appendChild(makeAudioCell(audioSrc(row.midiSagGt)));
+        tr.appendChild(makeAudioCell(audioSrc(row.midiSagDetected)));
+        tbody.appendChild(tr);
+      });
+    </script>
+  </section>
+</div>
+
+<!-- =======================
      Audio Samples (4 × 8 table: Vocal + FastSAG + AnyAccomp + Predicted MIDI + 4 MIDI-SAG prompts)
      ======================= -->
 <div class="container my-4">
   <section id="audio-samples" style="margin: 32px 0;">
-    <h2 style="margin: 0 0 10px;">1. Experiment 2: MIDI-SAG without Groundtruth Vocal MIDI</h2>
+    <h2 style="margin: 0 0 10px;">2. Experiment 2: MIDI-SAG without Groundtruth Vocal MIDI</h2>
     <p style="margin: 0 0 18px; opacity: 0.8; line-height: 1.4;">
       Each row uses the same vocal input. The columns compare the vocal track, FastSAG, AnyAccomp, the predicted vocal MIDI and chord sequence quantized with detected beat, and four MIDI-SAG outputs generated with different accompaniment text prompts.
     </p>
@@ -898,7 +1473,7 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
 <div class="container my-4">
 
   <div class="d-flex justify-content-between align-items-center mb-2">
-    <h4 class="m-0">2. Random picked demo tracks</h4>
+    <h4 class="m-0">3. Random picked demo tracks</h4>
     <div>
       <button id="expandAll" class="btn btn-sm btn-outline-primary mr-2"><i class="bi bi-arrows-expand"></i> Expand all lyrics</button>
       <button id="collapseAll" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrows-collapse"></i> Collapse all lyrics</button>
@@ -1540,7 +2115,7 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
         <!-- === 3×4 MATRIX: Lyrics × (3 Local Text Prompts), Rows = Chord Progressions === -->
         <div class="container my-5">
           <div class="d-flex justify-content-between align-items-center mb-2">
-            <h4 class="m-0">3. Chord Progression × Local Text Prompt (5×3)</h4>
+            <h4 class="m-0">4. Chord Progression × Local Text Prompt (5×3)</h4>
             <div class="small">
               <button class="btn btn-sm btn-outline-primary mr-2" data-toggle="collapse" data-target="#prompt-A,#prompt-B,#prompt-C">
                 <i class="bi bi-arrows-expand"></i> Toggle all text prompts
@@ -2714,7 +3289,7 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
 <!-- === NEW SECTION: Different singer and key === -->
 <div class="container my-5">
   <div class="d-flex justify-content-between align-items-center mb-2">
-    <h4 class="m-0">4. Same Lyrics and Melody, but Different Singer and Key</h4>
+    <h4 class="m-0">5. Same Lyrics and Melody, but Different Singer and Key</h4>
     <div>
       <button id="expandAllDK" class="btn btn-sm btn-outline-primary mr-2">
         <i class="bi bi-arrows-expand"></i> Expand all lyrics
@@ -3264,7 +3839,7 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
 </div>
 <div class="container my-5">
   <div class="d-flex justify-content-between align-items-center mb-2">
-    <h4 class="m-0">5. Same Lyrics and singer, different lyrics-to-melody model</h4>
+    <h4 class="m-0">6. Same Lyrics and singer, different lyrics-to-melody model</h4>
     <div>
       <button id="expandAllDK" class="btn btn-sm btn-outline-primary mr-2">
         <i class="bi bi-arrows-expand"></i> Expand all lyrics
@@ -3716,7 +4291,7 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
 <!-- === NEW SECTION: Melody from Existing Songs vs Auto-generated Melody (2 Variants) === -->
 <div class="container my-5" id="um2cmp">
   <div class="d-flex justify-content-between align-items-center mb-2">
-    <h4 class="m-0">6. Melody from Existing Songs vs Auto-generated Melody (2 Variants)</h4>
+    <h4 class="m-0">7. Melody from Existing Songs vs Auto-generated Melody (2 Variants)</h4>
     <div>
       <button id="expandAllUM2CMP" class="btn btn-sm btn-outline-primary mr-2">
         <i class="bi bi-arrows-expand"></i> Expand all lyrics
