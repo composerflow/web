@@ -245,6 +245,8 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
         { label: "Audio-SAG", desc: "Accompaniment conditioned on vocal audio + text prompt" },
         { label: "MIDI-SAG w/ GT vocal MIDI", desc: "Conditioned on ground-truth vocal MIDI + chord + text prompt" },
         { label: "MIDI-SAG w/o GT vocal MIDI", desc: "Conditioned on detected vocal MIDI + chord + text prompt" },
+        { label: "Full song w/ GT vocal MIDI", desc: "Section-by-section generation with per-segment structure prompts" },
+        { label: "Full song w/o GT vocal MIDI", desc: "Section-by-section generation using the detected vocal MIDI" },
       ];
 
       const EXP1_PROMPTS = [
@@ -270,6 +272,7 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
       const EXP1_ROWS = EXP1_SONGS.map((song, i) => {
         const p = EXP1_PROMPTS[i];
         const mixFile = `mixed_${song}_prompt_${p.idx}_${p.slug}.wav`;
+        const fullDir = "Backing_track/text_7.0_con_1.5_rhythm_melody_structure_chord_audio_0.3_500";
         return {
           title: song,
           prompt: p.text,
@@ -280,6 +283,10 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
           audioSag: `${EXP1_BASE}/${song}_vocal_audiotext_7.0_con_1.5/${mixFile}`,
           midiSagGt: `${EXP1_BASE}/${song}/Backing_track/text_7.0_con_1.5/${mixFile}`,
           midiSagDetected: `${EXP1_BASE}/${song}-detected/Backing_track/text_7.0_con_1.5/${mixFile}`,
+          fullGt: `${EXP1_BASE}/${song}/${fullDir}/mixed_${song}_full.wav`,
+          fullGtPrompts: `${EXP1_BASE}/${song}/${fullDir}/mixed_${song}_structure_prompts.json`,
+          fullDetected: `${EXP1_BASE}/${song}-detected/${fullDir}/mixed_${song}_full.wav`,
+          fullDetectedPrompts: `${EXP1_BASE}/${song}-detected/${fullDir}/mixed_${song}_structure_prompts.json`,
         };
       });
 
@@ -772,6 +779,52 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
         return td;
       }
 
+      function makeFullSongCell(audioPath, promptsJsonPath) {
+        const td = document.createElement("td");
+        td.style.cssText = `
+          border: 1px solid rgba(0,0,0,0.15);
+          padding: 10px;
+          vertical-align: top;
+          min-width: 320px;
+        `;
+        const audio = document.createElement("audio");
+        audio.controls = true;
+        audio.preload = "none";
+        audio.style.width = "100%";
+        audio.src = audioSrc(audioPath);
+        td.appendChild(audio);
+
+        const promptBox = document.createElement("pre");
+        promptBox.style.cssText = `
+          margin: 8px 0 0; padding: 8px 10px;
+          background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;
+          font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+          font-size: 12px; line-height: 1.45; color: #1f2937;
+          white-space: pre-wrap; word-break: break-word;
+          max-height: 220px; overflow-y: auto;
+        `;
+        promptBox.textContent = "Loading structure prompts…";
+        td.appendChild(promptBox);
+
+        fetch(audioSrc(promptsJsonPath))
+          .then((r) => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
+          .then((data) => {
+            const segs = Array.isArray(data.segments) ? data.segments : [];
+            if (!segs.length) {
+              promptBox.textContent = "(no structure prompts found)";
+              return;
+            }
+            promptBox.textContent = segs
+              .map((s) => `[${s.tag || `seg${s.index}`}]\n${s.prompt || ""}`)
+              .join("\n");
+          })
+          .catch((err) => {
+            promptBox.textContent = `Failed to load structure prompts (${err.message})`;
+          });
+
+        return td;
+      }
+
       const thead = document.querySelector("#audio-table-exp1 thead");
       const tbody = document.querySelector("#audio-table-exp1 tbody");
 
@@ -788,6 +841,8 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
         tr.appendChild(makeAudioCell(audioSrc(row.audioSag)));
         tr.appendChild(makeAudioCell(audioSrc(row.midiSagGt)));
         tr.appendChild(makeAudioCell(audioSrc(row.midiSagDetected)));
+        tr.appendChild(makeFullSongCell(row.fullGt, row.fullGtPrompts));
+        tr.appendChild(makeFullSongCell(row.fullDetected, row.fullDetectedPrompts));
         tbody.appendChild(tr);
       });
     </script>
