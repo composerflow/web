@@ -345,7 +345,7 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
           text-align: left;
           vertical-align: top;
           background: rgba(0,0,0,0.03);
-          min-width: 260px;
+          min-width: 380px;
         `;
         const descHtml = col.desc
           ? `<div style="font-size:12px; opacity:0.85; line-height:1.35;">${col.desc}</div>`
@@ -357,32 +357,26 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
         return th;
       }
 
-      function makeAudioCell(src, title = "", subtitle = "") {
+      function makeAudioCell(src, caption = "") {
         const td = document.createElement("td");
         td.style.cssText = `
           border: 1px solid rgba(0,0,0,0.15);
           padding: 10px;
           vertical-align: top;
-          min-width: 260px;
+          min-width: 380px;
         `;
-        if (title) {
-          const label = document.createElement("div");
-          label.style.cssText = "font-weight: 600; margin-bottom: 6px; word-break: break-word;";
-          label.textContent = title;
-          td.appendChild(label);
-        }
-        if (subtitle) {
-          const sub = document.createElement("div");
-          sub.style.cssText = "font-size: 12px; opacity: 0.85; line-height: 1.35; margin-bottom: 8px;";
-          sub.textContent = subtitle;
-          td.appendChild(sub);
-        }
         const audio = document.createElement("audio");
         audio.controls = true;
         audio.preload = "none";
         audio.style.width = "100%";
         audio.src = src;
         td.appendChild(audio);
+        if (caption) {
+          const cap = document.createElement("div");
+          cap.style.cssText = "font-size: 12px; opacity: 0.85; line-height: 1.35; margin-top: 8px; word-break: break-word;";
+          cap.textContent = caption;
+          td.appendChild(cap);
+        }
         return td;
       }
 
@@ -834,7 +828,7 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
 
       EXP1_ROWS.forEach((row) => {
         const tr = document.createElement("tr");
-        tr.appendChild(makeAudioCell(audioSrc(row.vocal), row.title, row.prompt));
+        tr.appendChild(makeAudioCell(audioSrc(row.vocal), row.prompt));
         tr.appendChild(makeMidiCell(row.gtMidi));
         tr.appendChild(makeMidiCell(row.detectedMidi));
         tr.appendChild(makeAudioCell(audioSrc(row.ttm)));
