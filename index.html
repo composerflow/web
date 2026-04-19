@@ -872,7 +872,7 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
   <figure class="figure w-100 text-center">
     <img src="vocal2backing_flow-MIDI-SAG.png" alt="MIDI-SAG inference pipeline with and without ground-truth vocal MIDI" class="figure-img img-fluid" style="max-width: 80%; height: auto;">
     <figcaption class="figure-caption text-center" style="opacity: 0.8; line-height: 1.4;">
-      Figure 1: MIDI-SAG inference pipelines. Top: MIDI-SAG without ground-truth vocal MIDI, where the vocal MIDI is predicted from raw vocal audio via SOME and fed to Accomontage2 for chord progression. Bottom: MIDI-SAG with ground-truth vocal MIDI, where beat, downbeat, and chord progression are derived directly from the provided vocal MIDI score.
+      Figure 1: MIDI-SAG inference pipelines. Top: MIDI-SAG without ground-truth vocal MIDI, where the vocal MIDI is predicted from raw vocal audio via SOME, vocal beat is detected by a vocal beat detector and fed to Accomontage2 for chord progression. Bottom: MIDI-SAG with ground-truth vocal MIDI, where beat, downbeat, chord progression is harmonized by Accomontage2 .
     </figcaption>
   </figure>
 </div>
