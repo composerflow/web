@@ -215,9 +215,9 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
   </section>
 </div>
 
-<div style="text-align:center;">
+<!-- <div style="text-align:center;">
   <img src="composerflow.png" alt="Album cover" style="max-width:75%; height:auto;">
-</div>
+</div> -->
 
 <!-- =======================
      Experiment 1 — with Groundtruth Vocal MIDI (7 columns: Vocal + prompt, GT MIDI, Detected MIDI, TTM, Audio-SAG, MIDI-SAG w/ gt, MIDI-SAG w/o gt)
@@ -226,7 +226,7 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
   <section id="audio-samples-exp1" style="margin: 32px 0;">
     <h2 style="margin: 0 0 10px;">1. Experiment 1: Score-to-Song Generation</h2>
     <p style="margin: 0 0 18px; opacity: 0.8; line-height: 1.4;">
-      Each row uses one vocal input and its paired accompaniment text prompt. Columns compare the vocal + prompt, the ground-truth vocal MIDI with chord, the detected vocal MIDI with chord, a text-to-music (TTM) baseline, Audio-SAG, MIDI-SAG with ground-truth vocal MIDI, and MIDI-SAG without ground-truth vocal MIDI (using the detected MIDI).
+      Each row uses one vocal input and its paired accompaniment text prompt. 
     </p>
 
     <div id="audio-table-exp1-wrap" class="table-responsive drag-scroll">
@@ -239,14 +239,14 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
     <script type="module">
       const EXP1_COLUMNS = [
         { label: "Vocal input + text prompt" },
-        { label: "Ground-truth vocal MIDI + chord", desc: "Playable MIDI rendered with a browser synth" },
-        { label: "Detected vocal MIDI + chord", desc: "Playable MIDI rendered with a browser synth" },
+        { label: "Ground-truth vocal MIDI + Accomontage2 harmonized chords"},
+        { label: "Detected vocal MIDI +  Accomontage2 harmonized chords"},
         { label: "TTM (text-to-music)", desc: "Baseline generated from the text prompt only" },
-        { label: "Audio-SAG", desc: "Accompaniment conditioned on vocal audio + text prompt" },
-        { label: "MIDI-SAG w/ GT vocal MIDI", desc: "Conditioned on ground-truth vocal MIDI + chord + text prompt" },
-        { label: "MIDI-SAG w/o GT vocal MIDI", desc: "Conditioned on detected vocal MIDI + chord + text prompt" },
-        { label: "Full song w/ GT vocal MIDI", desc: "Section-by-section generation with per-segment structure prompts" },
-        { label: "Full song w/o GT vocal MIDI", desc: "Section-by-section generation using the detected vocal MIDI" },
+        { label: "Audio-SAG", desc: "Conditioned on vocal audio + text prompt" },
+        { label: "MIDI-SAG w/ GT vocal MIDI", desc: "Conditioned on ground truth vocal MIDI (harmonized chords + beat timestamps) + vocal pitch contour + text prompt"},
+        { label: "MIDI-SAG w/o GT vocal MIDI", desc: "Conditioned on detected vocal MIDI (harmonized chords) + detected beats + vocal pitch contour + text prompt" },
+        { label: "Full song w/ GT vocal MIDI", desc: "Section-by-section generation with per-segment structure prompts. Conditioned on ground truth vocal MIDI (harmonized chords + beat timestamps + vocal pitch contour + text prompt + structure tags" },
+        { label: "Full song w/o GT vocal MIDI", desc: "Section-by-section generation using the detected vocal MIDI. Conditioned on detected vocal MIDI (harmonized chords) + detected beats + vocal pitch contour + text prompt + structure tags" },
       ];
 
       const EXP1_PROMPTS = [
@@ -866,13 +866,25 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
 </div>
 
 <!-- =======================
+     MIDI-SAG inference pipeline figure
+     ======================= -->
+<div class="container my-4">
+  <figure class="figure w-100 text-center">
+    <img src="vocal2backing_flow-MIDI-SAG.png" alt="MIDI-SAG inference pipeline with and without ground-truth vocal MIDI" class="figure-img img-fluid" style="max-width: 80%; height: auto;">
+    <figcaption class="figure-caption text-center" style="opacity: 0.8; line-height: 1.4;">
+      Figure 1: MIDI-SAG inference pipelines. Top: MIDI-SAG without ground-truth vocal MIDI, where the vocal MIDI is predicted from raw vocal audio via SOME and fed to Accomontage2 for chord progression. Bottom: MIDI-SAG with ground-truth vocal MIDI, where beat, downbeat, and chord progression are derived directly from the provided vocal MIDI score.
+    </figcaption>
+  </figure>
+</div>
+
+<!-- =======================
      Audio Samples (4 × 8 table: Vocal + FastSAG + AnyAccomp + Predicted MIDI + 4 MIDI-SAG prompts)
      ======================= -->
 <div class="container my-4">
   <section id="audio-samples" style="margin: 32px 0;">
     <h2 style="margin: 0 0 10px;">2. Experiment 2: MIDI-SAG without Groundtruth Vocal MIDI</h2>
     <p style="margin: 0 0 18px; opacity: 0.8; line-height: 1.4;">
-      Each row uses the same vocal input. The columns compare the vocal track, FastSAG, AnyAccomp, the predicted vocal MIDI and chord sequence quantized with detected beat, and four MIDI-SAG outputs generated with different accompaniment text prompts.
+      Each row uses the same vocal input. 
     </p>
 
     <div id="audio-table-wrap" class="table-responsive drag-scroll">
@@ -885,8 +897,8 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
     <script type="module">
       const COMPARISON_COLUMNS = [
         { label: "Vocal"},
-        { label: "FastSAG"},
-        { label: "AnyAccomp"},
+        { label: "FastSAG (only able to generate 9-second audio)"},
+        { label: "AnyAccomp (only able to generate 10-second audio)"},
         { label: "Predicted vocal MIDI and chord, quantized with detected beat", desc: "Playable MIDI rendered with a browser synth" },
         { label: "MIDI-SAG P1", desc: "energetic rock backing with drums, electric guitar, bass guitar, driving rhythm, and uplifting mood" },
         { label: "MIDI-SAG P2", desc: "romantic jazz backing with piano, bass, soft drums, cool harmony, and reflective atmosphere" },
@@ -1540,20 +1552,32 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
   </section>
 </div>
 
+<!-- =======================
+     ComposerFlow pipeline figure
+     ======================= -->
+<div class="container my-4">
+  <figure class="figure w-100 text-center">
+    <img src="composerflow.png" alt="Overview of the ComposerFlow pipeline" class="figure-img img-fluid" style="max-width: 95%; height: auto;">
+    <figcaption class="figure-caption text-center" style="opacity: 0.8; line-height: 1.4;">
+      Figure 2: Overview of the ComposerFlow pipeline for lyrics-to-song generation. Given key, structure, and lyrics, CSL-L2M produces a vocal MIDI score; Accomontage2 generates the chord progression and Fast-speech synthesizes the vocal audio. These signals are converted into time-varying conditions (chromagram, reference audio, vocal pitch contour, text description, structure, rhythm) that guide MuseControlLite to generate the backing track, which is then mixed with the vocal to form the final song.
+    </figcaption>
+  </figure>
+</div>
+
 <!-- === DEMO TABLE === -->
 <div class="container my-4">
 
   <div class="d-flex justify-content-between align-items-center mb-2">
-    <h4 class="m-0">3. Experiment 3: Lyrics-to-Song Generation</h4>
+    <h2 class="m-0" style="margin: 0 0 10px;">3. Experiment 3: Lyrics-to-Song Generation</h2>
     <div>
       <button id="expandAll" class="btn btn-sm btn-outline-primary mr-2"><i class="bi bi-arrows-expand"></i> Expand all lyrics</button>
       <button id="collapseAll" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrows-collapse"></i> Collapse all lyrics</button>
     </div>
   </div>
 
-  <div class="alert alert-light border small">
-    <strong>This sections shows the lyrics-to-song ability of our model. <br>How to use:</strong> Click “Show lyrics” in a row to expand/collapse the full lyrics. Each row shows the global style prompt and 5 generated versions (one per model). You can scroll horizontally if needed.
-  </div>
+  <p style="margin: 0 0 18px; opacity: 0.8; line-height: 1.4;">
+    This section shows the lyrics-to-song ability of our model. Click “Show lyrics” in a row to expand/collapse the full lyrics. Each row shows the global style prompt and 5 generated versions (one per model). You can scroll horizontally if needed.
+  </p>
 
   <div class="table-responsive">
     <table class="table table-sm table-bordered align-middle" aria-describedby="table-explainer">
@@ -2186,7 +2210,7 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
         <!-- === 3×4 MATRIX: Lyrics × (3 Local Text Prompts), Rows = Chord Progressions === -->
         <div class="container my-5">
           <div class="d-flex justify-content-between align-items-center mb-2">
-            <h4 class="m-0">4. Chord Progression × Local Text Prompt (5×3)</h4>
+            <h2 class="m-0" style="margin: 0 0 10px;">4. Chord Progression × Local Text Prompt (5×3)</h2>
             <div class="small">
               <button class="btn btn-sm btn-outline-primary mr-2" data-toggle="collapse" data-target="#prompt-A,#prompt-B,#prompt-C">
                 <i class="bi bi-arrows-expand"></i> Toggle all text prompts
@@ -2194,11 +2218,9 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
             </div>
           </div>
 
-          <div class="alert alert-light border small mb-3">
-            <strong>This sections shows the capability of editing intermediate feature, we take chord progessions as an example.<br>How to read:</strong> The first column shows the <em>lyrics</em> (shared). Each row fixes a <em>chord progression</em> (toggle it per row).
-            Each of the columns plays audio with a different <em>text prompt</em> (toggle prompt text per column).
-            Chord V is automatically generate by Accomontage2, other chord progressions are arrange by musicians. Chords and prompts are collapsible.
-          </div>
+          <p style="margin: 0 0 18px; opacity: 0.8; line-height: 1.4;">
+            This section shows the capability of editing intermediate features; we take chord progressions as an example. The first column shows the <em>lyrics</em> (shared). Each row fixes a <em>chord progression</em> (toggle it per row). Each of the columns plays audio with a different <em>text prompt</em> (toggle prompt text per column). Chord V is automatically generated by Accomontage2; other chord progressions are arranged by musicians. Chords and prompts are collapsible.
+          </p>
 
           <div class="table-responsive">
             <table class="table table-sm table-bordered align-middle">
