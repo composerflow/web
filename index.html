@@ -90,12 +90,26 @@
     }
 
     /* Custom MIDI player (piano-roll + transport) */
-    .midi-demo-cell { display: flex; flex-direction: column; gap: 8px; }
+    .midi-demo-cell { display: flex; flex-direction: column; gap: 8px; position: relative; }
     .midi-demo-trigger { align-self: flex-start; border-radius: 999px; }
     .midi-demo-card[hidden] { display: none !important; }
     .midi-demo-card {
       border: 1px solid #dbe4f0; border-radius: 12px; padding: 8px;
       background: #ffffff; display: flex; flex-direction: column; gap: 8px;
+      position: relative;
+    }
+    /* When the card is open, the Hide button overlays the top-right of the
+       MIDI viewport and tracks the user's horizontal drag so it stays
+       visually attached to the MIDI player. */
+    .midi-demo-cell.expanded > .midi-demo-trigger {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      z-index: 20;
+      align-self: auto;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
+      will-change: transform;
+      transition: transform 80ms ease-out;
     }
 
     .midi-viewport {
@@ -213,6 +227,19 @@
     <p class="lead mb-0">While end-to-end lyrics-to-song models offer convenience for casual users, professional songwriters require score-to-song systems that allow them to retain authorship over the core melody. However, existing score-to-song methods are limited to short-form snippets and fail to maintain coherence in long-form generation, particularly during vocal-silent sections like intros and bridges.
 To address this long-form bottleneck, we propose MIDI-informed singing accompaniment generation (MIDI-SAG). Unlike conventional audio-only models, MIDI-SAG utilizes symbolic timing and chord information derived from the vocal MIDI to provide a stable musical roadmap. By incorporating structure planning, which defines temporal boundaries and semantic labels, our framework facilitates consistent generation across both vocal and non-vocal sections. We demonstrate the feasibility of this compositional pipeline by leveraging specialized pre-trained modules, enabling data-efficient training on a single GPU. Our experiments show the potential of this approach for both professional score-to-song and general lyrics-to-song tasks. While an early exploration, MIDI-SAG suggests a promising direction for structured, long-form music synthesis. Audio demos are available, and the code will be open-sourced at \url{https://composerflow.github.io/web/}.</p>
   </section>
+
+  <section aria-label="Page overview" class="mb-4">
+    <h2 class="h5 mb-2">Overview</h2>
+    <ol class="mb-0">
+      <li><a href="#sec-exp1">Experiment 1: Score-to-Song Generation</a></li>
+      <li><a href="#sec-exp2">Experiment 2: MIDI-SAG without Groundtruth Vocal MIDI</a></li>
+      <li><a href="#sec-exp3">Experiment 3: Lyrics-to-Song Generation</a></li>
+      <li><a href="#sec-chord-prompt">Chord Progression × Local Text Prompt (5×3)</a></li>
+      <li><a href="#sec-singer-key">Same Lyrics and Melody, but Different Singer and Key</a></li>
+      <li><a href="#sec-l2m-model">Same Lyrics and Singer, Different Lyrics-to-Melody Model</a></li>
+      <li><a href="#sec-melody-source">Melody from Existing Songs vs Auto-generated Melody (2 Variants)</a></li>
+    </ol>
+  </section>
 </div>
 
 <!-- <div style="text-align:center;">
@@ -224,9 +251,10 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
      ======================= -->
 <div class="container my-4">
   <section id="audio-samples-exp1" style="margin: 32px 0;">
-    <h2 style="margin: 0 0 10px;">1. Experiment 1: Score-to-Song Generation</h2>
+    <h2 id="sec-exp1" style="margin: 0 0 10px;">1. Experiment 1: Score-to-Song Generation</h2>
     <p style="margin: 0 0 18px; opacity: 0.8; line-height: 1.4;">
       Each row uses one vocal input and its paired accompaniment text prompt. The Audio-SAG baseline is our attempt to mimic other current singing accompaniment generation methods (e.g. Melodist, MelodyLM, VerseBand, SingSong, Fast-SAG, AnyAccomp), where they only use vocal audio as input.
+      The vocal input in this session are all in <strong>Mandarin</strong> (Vocal inputs in Session 2 are in English)
     </p>
 
     <div id="audio-table-exp1-wrap" class="table-responsive drag-scroll">
@@ -269,6 +297,50 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
 
       const EXP1_BASE = "./demo_website_selected/experiment_1";
 
+      // === Per-row caption metadata. Edit the strings below to set the
+      //     "Duration" and "Vocal start" text shown beneath each audio cell
+      //     in Experiment 1. Order of rows matches EXP1_SONGS. Each key
+      //     corresponds to one audio column for that row. Leave a value as
+      //     "" to hide that line for that cell. ===
+      const EXP1_META = [
+        { // row 0: 刀剑如梦-周华健-134-F
+          vocal:           { duration: "1:30", vocalStart: "0:30" },
+          ttm:             { duration: "0:47", vocalStart: "0:30" },
+          audioSag:        { duration: "0:47", vocalStart: "0:30" },
+          midiSagGt:       { duration: "0:47", vocalStart: "0:30" },
+          midiSagDetected: { duration: "0:47", vocalStart: "0:30" },
+          fullGt:          { duration: "1:30", vocalStart: "0:30" },
+          fullDetected:    { duration: "1:30", vocalStart: "0:30" },
+        },
+        { // row 1: 小手拉大手-梁靜茹-130-C大调
+          vocal:           { duration: "1:46", vocalStart: "0:30" },
+          ttm:             { duration: "0:47", vocalStart: "0:30" },
+          audioSag:        { duration: "0:47", vocalStart: "0:30" },
+          midiSagGt:       { duration: "0:47", vocalStart: "0:30" },
+          midiSagDetected: { duration: "0:47", vocalStart: "0:30" },
+          fullGt:          { duration: "1:46", vocalStart: "0:30" },
+          fullDetected:    { duration: "1:46", vocalStart: "0:30" },
+        },
+        { // row 2: 爱在夏天-告五人-75-Db大调
+          vocal:           { duration: "3:32", vocalStart: "0:22" },
+          ttm:             { duration: "0:47", vocalStart: "0:22" },
+          audioSag:        { duration: "0:47", vocalStart: "0:22" },
+          midiSagGt:       { duration: "0:47", vocalStart: "0:22" },
+          midiSagDetected: { duration: "0:47", vocalStart: "0:22" },
+          fullGt:          { duration: "3:32", vocalStart: "0:22" },
+          fullDetected:    { duration: "3:32", vocalStart: "0:22" },
+        },
+        { // row 3: 简单爱-周杰伦-97-C
+          vocal:           { duration: "2:05", vocalStart: "0:27" },
+          ttm:             { duration: "0:47", vocalStart: "0:27" },
+          audioSag:        { duration: "0:47", vocalStart: "0:27" },
+          midiSagGt:       { duration: "0:47", vocalStart: "0:27" },
+          midiSagDetected: { duration: "0:47", vocalStart: "0:27" },
+          fullGt:          { duration: "2:05", vocalStart: "0:27" },
+          fullDetected:    { duration: "2:05", vocalStart: "0:27" },
+        },
+      ];
+
       const EXP1_ROWS = EXP1_SONGS.map((song, i) => {
         const p = EXP1_PROMPTS[i];
         const mixFile = `mixed_${song}_prompt_${p.idx}_${p.slug}.wav`;
@@ -276,6 +348,7 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
         return {
           title: song,
           prompt: p.text,
+          meta: EXP1_META[i] || {},
           vocal: `${EXP1_BASE}/gt_vocal_MIDI/${song}.wav`,
           gtMidi: `${EXP1_BASE}/${song}/Harmonization_results/chord_gen_filled_empty/${song}_chord_gen_filled_empty_bars.mid`,
           detectedMidi: `${EXP1_BASE}/${song}-detected/Harmonization_results/chord_gen_filled_empty/${song}_chord_gen_filled_empty_bars.mid`,
@@ -357,7 +430,29 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
         return th;
       }
 
-      function makeAudioCell(src, caption = "") {
+      // === Per-cell duration / vocal-start captions ===
+      // `meta` is an object like { duration: "0:30", vocalStart: "0:04" }.
+      // Either field is optional; missing fields are simply not rendered.
+      function attachMetaCaption(parent, meta) {
+        if (!meta) return null;
+        const wrap = document.createElement("div");
+        wrap.style.cssText = "font-size:11px;color:#475569;margin-top:4px;font-variant-numeric:tabular-nums;line-height:1.4;";
+        if (meta.duration) {
+          const a = document.createElement("div");
+          a.textContent = "Duration: " + meta.duration;
+          wrap.appendChild(a);
+        }
+        if (meta.vocalStart) {
+          const b = document.createElement("div");
+          b.textContent = "Vocal start: " + meta.vocalStart;
+          wrap.appendChild(b);
+        }
+        if (wrap.childNodes.length === 0) return null;
+        parent.appendChild(wrap);
+        return wrap;
+      }
+
+      function makeAudioCell(src, caption = "", meta = null) {
         const td = document.createElement("td");
         td.style.cssText = `
           border: 1px solid rgba(0,0,0,0.15);
@@ -371,6 +466,7 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
         audio.style.width = "100%";
         audio.src = src;
         td.appendChild(audio);
+        attachMetaCaption(td, meta);
         if (caption) {
           const cap = document.createElement("div");
           cap.style.cssText = "font-size: 12px; opacity: 0.85; line-height: 1.35; margin-top: 8px; word-break: break-word;";
@@ -752,18 +848,46 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
         card.hidden = true;
         let controller = null;
         let mounting = null;
+        let dragScrollEl = null;
+        let dragScrollListener = null;
+        function attachDragTracking() {
+          const sc = card.querySelector(".midi-roll-scroll");
+          if (!sc || sc === dragScrollEl) return;
+          dragScrollEl = sc;
+          const apply = () => {
+            const max = Math.max(1, sc.scrollWidth - sc.clientWidth);
+            const ratio = Math.min(1, Math.max(0, sc.scrollLeft / max));
+            const range = Math.max(0, sc.clientWidth - trigger.offsetWidth - 24);
+            trigger.style.transform = `translateX(${-ratio * range}px)`;
+          };
+          dragScrollListener = apply;
+          sc.addEventListener("scroll", apply, { passive: true });
+          apply();
+        }
+        function detachDragTracking() {
+          if (dragScrollEl && dragScrollListener) {
+            dragScrollEl.removeEventListener("scroll", dragScrollListener);
+          }
+          dragScrollEl = null;
+          dragScrollListener = null;
+          trigger.style.transform = "";
+        }
         trigger.addEventListener("click", async () => {
           if (card.hidden) {
             card.hidden = false;
+            cell.classList.add("expanded");
             trigger.innerHTML = '<i class="bi bi-eye-slash"></i> Hide MIDI player';
             if (!controller && !mounting) {
               mounting = mountMidiPlayer(card, midiPath);
               controller = await mounting;
               mounting = null;
             }
+            attachDragTracking();
           } else {
             if (controller && typeof controller.stop === "function") controller.stop();
             card.hidden = true;
+            cell.classList.remove("expanded");
+            detachDragTracking();
             trigger.innerHTML = '<i class="bi bi-music-note-beamed"></i> Show MIDI player';
           }
         });
@@ -773,7 +897,7 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
         return td;
       }
 
-      function makeFullSongCell(audioPath, promptsJsonPath) {
+      function makeFullSongCell(audioPath, promptsJsonPath, meta = null) {
         const td = document.createElement("td");
         td.style.cssText = `
           border: 1px solid rgba(0,0,0,0.15);
@@ -787,6 +911,7 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
         audio.style.width = "100%";
         audio.src = audioSrc(audioPath);
         td.appendChild(audio);
+        attachMetaCaption(td, meta);
 
         const trigger = document.createElement("button");
         trigger.type = "button";
@@ -849,16 +974,17 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
       thead.appendChild(headerRow);
 
       EXP1_ROWS.forEach((row) => {
+        const m = row.meta || {};
         const tr = document.createElement("tr");
-        tr.appendChild(makeAudioCell(audioSrc(row.vocal), row.prompt));
+        tr.appendChild(makeAudioCell(audioSrc(row.vocal), row.prompt, m.vocal));
         tr.appendChild(makeMidiCell(row.gtMidi));
         tr.appendChild(makeMidiCell(row.detectedMidi));
-        tr.appendChild(makeAudioCell(audioSrc(row.ttm)));
-        tr.appendChild(makeAudioCell(audioSrc(row.audioSag)));
-        tr.appendChild(makeAudioCell(audioSrc(row.midiSagGt)));
-        tr.appendChild(makeAudioCell(audioSrc(row.midiSagDetected)));
-        tr.appendChild(makeFullSongCell(row.fullGt, row.fullGtPrompts));
-        tr.appendChild(makeFullSongCell(row.fullDetected, row.fullDetectedPrompts));
+        tr.appendChild(makeAudioCell(audioSrc(row.ttm), "", m.ttm));
+        tr.appendChild(makeAudioCell(audioSrc(row.audioSag), "", m.audioSag));
+        tr.appendChild(makeAudioCell(audioSrc(row.midiSagGt), "", m.midiSagGt));
+        tr.appendChild(makeAudioCell(audioSrc(row.midiSagDetected), "", m.midiSagDetected));
+        tr.appendChild(makeFullSongCell(row.fullGt, row.fullGtPrompts, m.fullGt));
+        tr.appendChild(makeFullSongCell(row.fullDetected, row.fullDetectedPrompts, m.fullDetected));
         tbody.appendChild(tr);
       });
     </script>
@@ -882,9 +1008,9 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
      ======================= -->
 <div class="container my-4">
   <section id="audio-samples" style="margin: 32px 0;">
-    <h2 style="margin: 0 0 10px;">2. Experiment 2: MIDI-SAG without Groundtruth Vocal MIDI</h2>
+    <h2 id="sec-exp2" style="margin: 0 0 10px;">2. Experiment 2: MIDI-SAG without Groundtruth Vocal MIDI</h2>
     <p style="margin: 0 0 18px; opacity: 0.8; line-height: 1.4;">
-      Each row uses the same vocal input. 
+      Each row uses the same vocal input, the vocal audio are from the MUSDB testset (<strong>English</strong>). Fast-SAG and AnyAccomp only use vocal audio as condition, where as our MIDI-SAG also use text condition. We demonstrate the text control ability with 4 different prompts for each vocal input.
     </p>
 
     <div id="audio-table-wrap" class="table-responsive drag-scroll">
@@ -1506,19 +1632,47 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
 
         let controller = null;
         let mounting = null;
+        let dragScrollEl = null;
+        let dragScrollListener = null;
+        function attachDragTracking() {
+          const sc = card.querySelector(".midi-roll-scroll");
+          if (!sc || sc === dragScrollEl) return;
+          dragScrollEl = sc;
+          const apply = () => {
+            const max = Math.max(1, sc.scrollWidth - sc.clientWidth);
+            const ratio = Math.min(1, Math.max(0, sc.scrollLeft / max));
+            const range = Math.max(0, sc.clientWidth - trigger.offsetWidth - 24);
+            trigger.style.transform = `translateX(${-ratio * range}px)`;
+          };
+          dragScrollListener = apply;
+          sc.addEventListener("scroll", apply, { passive: true });
+          apply();
+        }
+        function detachDragTracking() {
+          if (dragScrollEl && dragScrollListener) {
+            dragScrollEl.removeEventListener("scroll", dragScrollListener);
+          }
+          dragScrollEl = null;
+          dragScrollListener = null;
+          trigger.style.transform = "";
+        }
 
         trigger.addEventListener("click", async () => {
           if (card.hidden) {
             card.hidden = false;
+            cell.classList.add("expanded");
             trigger.innerHTML = '<i class="bi bi-eye-slash"></i> Hide MIDI player';
             if (!controller && !mounting) {
               mounting = mountMidiPlayer(card, midiPath);
               controller = await mounting;
               mounting = null;
             }
+            attachDragTracking();
           } else {
             if (controller && typeof controller.stop === "function") controller.stop();
             card.hidden = true;
+            cell.classList.remove("expanded");
+            detachDragTracking();
             trigger.innerHTML = '<i class="bi bi-music-note-beamed"></i> Show MIDI player';
           }
         });
@@ -1568,7 +1722,7 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
 <div class="container my-4">
 
   <div class="d-flex justify-content-between align-items-center mb-2">
-    <h2 class="m-0" style="margin: 0 0 10px;">3. Experiment 3: Lyrics-to-Song Generation</h2>
+    <h2 id="sec-exp3" class="m-0" style="margin: 0 0 10px;">3. Experiment 3: Lyrics-to-Song Generation</h2>
     <div>
       <button id="expandAll" class="btn btn-sm btn-outline-primary mr-2"><i class="bi bi-arrows-expand"></i> Expand all lyrics</button>
       <button id="collapseAll" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrows-collapse"></i> Collapse all lyrics</button>
@@ -2210,7 +2364,7 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
         <!-- === 3×4 MATRIX: Lyrics × (3 Local Text Prompts), Rows = Chord Progressions === -->
         <div class="container my-5">
           <div class="d-flex justify-content-between align-items-center mb-2">
-            <h2 class="m-0" style="margin: 0 0 10px;">4. Chord Progression × Local Text Prompt (5×3)</h2>
+            <h2 id="sec-chord-prompt" class="m-0" style="margin: 0 0 10px;">4. Chord Progression × Local Text Prompt (5×3)</h2>
             <div class="small">
               <button class="btn btn-sm btn-outline-primary mr-2" data-toggle="collapse" data-target="#prompt-A,#prompt-B,#prompt-C">
                 <i class="bi bi-arrows-expand"></i> Toggle all text prompts
@@ -3382,7 +3536,7 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
 <!-- === NEW SECTION: Different singer and key === -->
 <div class="container my-5">
   <div class="d-flex justify-content-between align-items-center mb-2">
-    <h4 class="m-0">5. Same Lyrics and Melody, but Different Singer and Key</h4>
+    <h4 id="sec-singer-key" class="m-0">5. Same Lyrics and Melody, but Different Singer and Key</h4>
     <div>
       <button id="expandAllDK" class="btn btn-sm btn-outline-primary mr-2">
         <i class="bi bi-arrows-expand"></i> Expand all lyrics
@@ -3932,7 +4086,7 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
 </div>
 <div class="container my-5">
   <div class="d-flex justify-content-between align-items-center mb-2">
-    <h4 class="m-0">6. Same Lyrics and singer, different lyrics-to-melody model</h4>
+    <h4 id="sec-l2m-model" class="m-0">6. Same Lyrics and singer, different lyrics-to-melody model</h4>
     <div>
       <button id="expandAllDK" class="btn btn-sm btn-outline-primary mr-2">
         <i class="bi bi-arrows-expand"></i> Expand all lyrics
@@ -4384,7 +4538,7 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
 <!-- === NEW SECTION: Melody from Existing Songs vs Auto-generated Melody (2 Variants) === -->
 <div class="container my-5" id="um2cmp">
   <div class="d-flex justify-content-between align-items-center mb-2">
-    <h4 class="m-0">7. Melody from Existing Songs vs Auto-generated Melody (2 Variants)</h4>
+    <h4 id="sec-melody-source" class="m-0">7. Melody from Existing Songs vs Auto-generated Melody (2 Variants)</h4>
     <div>
       <button id="expandAllUM2CMP" class="btn btn-sm btn-outline-primary mr-2">
         <i class="bi bi-arrows-expand"></i> Expand all lyrics
