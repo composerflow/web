@@ -98,14 +98,15 @@
       background: #ffffff; display: flex; flex-direction: column; gap: 8px;
       position: relative;
     }
-    /* When the card is open, the Hide button slides with the viewport so it
-       stays reachable as the user scrolls the page. */
-    .midi-demo-cell.expanded > .midi-demo-trigger {
-      position: sticky;
-      top: 8px;
-      align-self: flex-end;
-      z-index: 20;
-      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
+    /* When the card is open, the Hide button is pinned to the viewport so it
+       slides with the screen as the user scrolls. JS toggles the `floating`
+       class only while the open card is actually in view. */
+    .midi-demo-cell.expanded > .midi-demo-trigger.floating {
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
     }
 
     .midi-viewport {
@@ -844,6 +845,23 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
         card.hidden = true;
         let controller = null;
         let mounting = null;
+        let visibilityObserver = null;
+        function startFloating() {
+          if (visibilityObserver) return;
+          visibilityObserver = new IntersectionObserver((entries) => {
+            entries.forEach((e) => {
+              trigger.classList.toggle("floating", e.isIntersecting);
+            });
+          }, { rootMargin: "0px 0px -40px 0px" });
+          visibilityObserver.observe(card);
+        }
+        function stopFloating() {
+          if (visibilityObserver) {
+            visibilityObserver.disconnect();
+            visibilityObserver = null;
+          }
+          trigger.classList.remove("floating");
+        }
         trigger.addEventListener("click", async () => {
           if (card.hidden) {
             card.hidden = false;
@@ -854,10 +872,12 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
               controller = await mounting;
               mounting = null;
             }
+            startFloating();
           } else {
             if (controller && typeof controller.stop === "function") controller.stop();
             card.hidden = true;
             cell.classList.remove("expanded");
+            stopFloating();
             trigger.innerHTML = '<i class="bi bi-music-note-beamed"></i> Show MIDI player';
           }
         });
@@ -1602,6 +1622,23 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
 
         let controller = null;
         let mounting = null;
+        let visibilityObserver = null;
+        function startFloating() {
+          if (visibilityObserver) return;
+          visibilityObserver = new IntersectionObserver((entries) => {
+            entries.forEach((e) => {
+              trigger.classList.toggle("floating", e.isIntersecting);
+            });
+          }, { rootMargin: "0px 0px -40px 0px" });
+          visibilityObserver.observe(card);
+        }
+        function stopFloating() {
+          if (visibilityObserver) {
+            visibilityObserver.disconnect();
+            visibilityObserver = null;
+          }
+          trigger.classList.remove("floating");
+        }
 
         trigger.addEventListener("click", async () => {
           if (card.hidden) {
@@ -1613,10 +1650,12 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
               controller = await mounting;
               mounting = null;
             }
+            startFloating();
           } else {
             if (controller && typeof controller.stop === "function") controller.stop();
             card.hidden = true;
             cell.classList.remove("expanded");
+            stopFloating();
             trigger.innerHTML = '<i class="bi bi-music-note-beamed"></i> Show MIDI player';
           }
         });
