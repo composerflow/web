@@ -850,21 +850,26 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
         function updatePosition() {
           rafId = 0;
           if (!floating) return;
-          const r = cell.getBoundingClientRect();
+          const r = card.getBoundingClientRect();
           const w = trigger.offsetWidth || 0;
-          const left = Math.max(8, Math.min(window.innerWidth - w - 8, r.right - w - 8));
+          let left = r.left + 8;
+          if (left < 8) left = 8;
+          if (left > r.right - w - 8) left = r.right - w - 8;
           trigger.style.left = left + "px";
         }
         function scheduleUpdate() {
           if (rafId) return;
           rafId = requestAnimationFrame(updatePosition);
         }
+        let scrollAncestor = null;
         function startFloating() {
           if (floating) return;
           floating = true;
           trigger.classList.add("floating");
+          scrollAncestor = cell.closest(".drag-scroll, .table-responsive");
           window.addEventListener("scroll", scheduleUpdate, { passive: true, capture: true });
           window.addEventListener("resize", scheduleUpdate);
+          if (scrollAncestor) scrollAncestor.addEventListener("scroll", scheduleUpdate, { passive: true });
           updatePosition();
         }
         function stopFloating() {
@@ -872,6 +877,8 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
           floating = false;
           window.removeEventListener("scroll", scheduleUpdate, { capture: true });
           window.removeEventListener("resize", scheduleUpdate);
+          if (scrollAncestor) scrollAncestor.removeEventListener("scroll", scheduleUpdate);
+          scrollAncestor = null;
           if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
           trigger.classList.remove("floating");
           trigger.style.left = "";
@@ -1641,21 +1648,26 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
         function updatePosition() {
           rafId = 0;
           if (!floating) return;
-          const r = cell.getBoundingClientRect();
+          const r = card.getBoundingClientRect();
           const w = trigger.offsetWidth || 0;
-          const left = Math.max(8, Math.min(window.innerWidth - w - 8, r.right - w - 8));
+          let left = r.left + 8;
+          if (left < 8) left = 8;
+          if (left > r.right - w - 8) left = r.right - w - 8;
           trigger.style.left = left + "px";
         }
         function scheduleUpdate() {
           if (rafId) return;
           rafId = requestAnimationFrame(updatePosition);
         }
+        let scrollAncestor = null;
         function startFloating() {
           if (floating) return;
           floating = true;
           trigger.classList.add("floating");
+          scrollAncestor = cell.closest(".drag-scroll, .table-responsive");
           window.addEventListener("scroll", scheduleUpdate, { passive: true, capture: true });
           window.addEventListener("resize", scheduleUpdate);
+          if (scrollAncestor) scrollAncestor.addEventListener("scroll", scheduleUpdate, { passive: true });
           updatePosition();
         }
         function stopFloating() {
@@ -1663,6 +1675,8 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
           floating = false;
           window.removeEventListener("scroll", scheduleUpdate, { capture: true });
           window.removeEventListener("resize", scheduleUpdate);
+          if (scrollAncestor) scrollAncestor.removeEventListener("scroll", scheduleUpdate);
+          scrollAncestor = null;
           if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
           trigger.classList.remove("floating");
           trigger.style.left = "";
