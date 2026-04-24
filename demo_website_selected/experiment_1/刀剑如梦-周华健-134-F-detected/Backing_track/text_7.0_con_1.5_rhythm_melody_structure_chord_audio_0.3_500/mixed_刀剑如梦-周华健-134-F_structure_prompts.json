@@ -1,7 +1,7 @@
 {
   "song_id": "刀剑如梦-周华健-134-F",
   "vocal_audio_file": "/data/home/fundwotsai/MIDI-SAG/demo_website/experiment_1/gt_vocal_MIDI/刀剑如梦-周华健-134-F.wav",
-  "mixed_audio_file": "/data/home/fundwotsai/MIDI-SAG/demo_website/experiment_1/刀剑如梦-周华健-134-F-detected/Backing_track/text_7.0_con_1.5_rhythm_melody_structure_chord_audio_0.3_500/mixed_刀剑如梦-周华健-134-F_full.wav",
+  "mixed_audio_file": "/data/home/fundwotsai/MIDI-SAG/test/刀剑如梦-周华健-134-F/Backing_track/text_7.0_con_1.5_rhythm_melody_structure_chord_audio_0.3_500/mixed_刀剑如梦-周华健-134-F_full.wav",
   "segments": [
     {
       "index": 0,
