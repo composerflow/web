@@ -235,6 +235,7 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
       <li><a href="#sec-singer-key">Same Lyrics and Melody, but Different Singer and Key</a></li>
       <li><a href="#sec-l2m-model">Same Lyrics and Singer, Different Lyrics-to-Melody Model</a></li>
       <li><a href="#sec-melody-source">Melody from Existing Songs vs Auto-generated Melody (2 Variants)</a></li>
+      <li><a href="#sec-real-dataset">Real-Song Dataset: Aligned Audio, Human MIDI &amp; Lyrics (8 Examples)</a></li>
     </ol>
   </section>
 </div>
@@ -5640,6 +5641,352 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
       exp.addEventListener('click', function () { areas.forEach(function (el) { $(el).collapse('show'); }); });
       col.addEventListener('click', function () { areas.forEach(function (el) { $(el).collapse('hide'); }); });
     }
+  })();
+</script>
+
+
+<!-- =======================
+     Section 8 — Real-Song Dataset: aligned real audio + human-annotated vocal MIDI + lyrics
+     ======================= -->
+<style>
+  .rd-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    padding: 14px 16px 16px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .rd-title { font-weight: 700; font-size: 16px; line-height: 1.3; }
+  .rd-sub { font-size: 12px; color: #64748b; }
+  .rd-badge {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    padding: 2px 8px; border-radius: 999px; margin-right: 6px;
+    background: #eef2ff; color: #4f46e5;
+  }
+  .rd-label { font-size: 12px; font-weight: 600; color: #334155; margin: 2px 0 4px; }
+  .rd-lyrics {
+    font-size: 13px; line-height: 1.6; color: #1e293b; white-space: pre-wrap;
+    max-height: 150px; overflow-y: auto; background: #f8fafc;
+    border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px;
+  }
+  .rd-lyrics::-webkit-scrollbar { width: 8px; }
+  .rd-lyrics::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+</style>
+<div class="container my-4">
+  <section id="sec-real-dataset-wrap" style="margin: 32px 0;">
+    <h2 id="sec-real-dataset" style="margin: 0 0 10px;">8. Real-Song Dataset: Aligned Audio, Human-Annotated MIDI &amp; Lyrics</h2>
+    <p style="margin: 0 0 18px; opacity: 0.85; line-height: 1.45;">
+      Eight examples from our real-song dataset. Each item pairs a segment of the
+      <strong>real recording</strong> (audio) that is time-aligned to its
+      <strong>human-annotated vocal MIDI</strong> (the melody piano-roll below is playable), together with the
+      song <strong>lyrics</strong>. The audio segment length is matched to the annotated MIDI duration,
+      so the recording and the MIDI line up in time.
+    </p>
+    <div id="real-dataset-grid" class="row"></div>
+  </section>
+</div>
+<script type="module">
+  const RD_BASE = "./real_song_dataset";
+  const RD_SONGS = [
+    "把幸福歌唱-潘莎-110-C",
+    "爱舍不得-乔漫-103-Db",
+    "初见-刘美麟-72-G",
+    "等到你为止-梦涵-128-Eb",
+    "多余了温柔-孙艺琪-80-C",
+    "冬天过了你再走-南宫嘉骏-82-Db",
+    "奔放心情-伍思凯-121.900-B",
+    "把思念告诉了心跳-李乐乐-60-G",
+  ];
+
+  const mmRD = window.core;
+  const RD_MELODY = "#dc2626";
+  const RD_ACTIVE = "#facc15";
+  const RD_PX_PER_SEC = 60;
+  const RD_NOTE_HEIGHT = 6;
+
+  const rdEnc = (p) => encodeURI(p);
+  function rdPitchName(p) {
+    const names = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+    return `${names[((p % 12) + 12) % 12]}${Math.floor(p / 12) - 1}`;
+  }
+  function rdFmt(sec) {
+    sec = Math.max(0, sec || 0);
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  }
+  function rdParseName(name) {
+    const parts = name.split("-");
+    const key = parts.length >= 4 ? parts[parts.length - 1] : "";
+    const bpm = parts.length >= 4 ? parts[parts.length - 2] : "";
+    const artist = parts.length >= 4 ? parts[parts.length - 3] : "";
+    const title = parts.slice(0, Math.max(1, parts.length - 3)).join("-");
+    return { title, artist, bpm, key };
+  }
+
+  // Shared synth + single-active-player coordination
+  let rdSynthPromise = null;
+  function rdGetSynth() {
+    if (rdSynthPromise) return rdSynthPromise;
+    rdSynthPromise = (async () => {
+      await Tone.start();
+      return new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: "triangle" },
+        envelope: { attack: 0.01, decay: 0.1, sustain: 0.5, release: 0.2 },
+      }).toDestination();
+    })();
+    return rdSynthPromise;
+  }
+  let rdActiveStop = null;
+  function rdStopActive() {
+    if (rdActiveStop) { const f = rdActiveStop; rdActiveStop = null; f(); }
+  }
+  // If any page <audio> starts, stop our MIDI playback.
+  document.addEventListener("play", (e) => {
+    if (e.target && e.target.tagName === "AUDIO") rdStopActive();
+  }, true);
+
+  async function rdMountMidi(container, midiPath) {
+    const viewport = document.createElement("div");
+    viewport.className = "midi-viewport";
+    const loading = document.createElement("div");
+    loading.style.cssText = "position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#64748b;font-size:13px;";
+    loading.textContent = "Loading MIDI…";
+    viewport.appendChild(loading);
+    container.appendChild(viewport);
+
+    let ns;
+    try {
+      ns = await mmRD.urlToNoteSequence(rdEnc(midiPath));
+    } catch (err) {
+      loading.textContent = "Failed to load MIDI";
+      console.error(err);
+      return;
+    }
+
+    const totalTime = Math.max(ns.totalTime || 0, 1);
+    const pitches = ns.notes.map((n) => n.pitch).sort((a, b) => a - b);
+    const minPitch = (pitches[0] ?? 55) - 1;
+    const maxPitch = (pitches[pitches.length - 1] ?? 72) + 1;
+    const rollHeight = Math.max((maxPitch - minPitch + 1) * RD_NOTE_HEIGHT, 120);
+    const rollWidth = Math.max(totalTime * RD_PX_PER_SEC, 400);
+
+    const scroll = document.createElement("div");
+    scroll.className = "midi-roll-scroll";
+    const svgNS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNS, "svg");
+    svg.setAttribute("width", rollWidth);
+    svg.setAttribute("height", rollHeight);
+    svg.setAttribute("viewBox", `0 0 ${rollWidth} ${rollHeight}`);
+
+    for (let p = minPitch; p <= maxPitch; p++) {
+      if ([1,3,6,8,10].includes(((p % 12) + 12) % 12)) {
+        const bg = document.createElementNS(svgNS, "rect");
+        bg.setAttribute("x", 0);
+        bg.setAttribute("y", (maxPitch - p) * RD_NOTE_HEIGHT);
+        bg.setAttribute("width", rollWidth);
+        bg.setAttribute("height", RD_NOTE_HEIGHT);
+        bg.setAttribute("fill", "#eef2ff");
+        svg.appendChild(bg);
+      }
+    }
+    for (let t = 0; t <= totalTime; t += 1) {
+      const x = Math.round(t * RD_PX_PER_SEC);
+      const line = document.createElementNS(svgNS, "line");
+      line.setAttribute("x1", x); line.setAttribute("x2", x);
+      line.setAttribute("y1", 0); line.setAttribute("y2", rollHeight);
+      line.setAttribute("stroke", "#cbd5e1"); line.setAttribute("stroke-width", 1);
+      svg.appendChild(line);
+    }
+
+    const events = [];
+    ns.notes.forEach((note) => {
+      const rect = document.createElementNS(svgNS, "rect");
+      rect.setAttribute("x", note.startTime * RD_PX_PER_SEC);
+      rect.setAttribute("y", (maxPitch - note.pitch) * RD_NOTE_HEIGHT + 0.5);
+      rect.setAttribute("width", Math.max(2, (note.endTime - note.startTime) * RD_PX_PER_SEC));
+      rect.setAttribute("height", RD_NOTE_HEIGHT - 1);
+      rect.setAttribute("rx", 1.5);
+      rect.setAttribute("fill", RD_MELODY);
+      svg.appendChild(rect);
+      events.push({
+        rect,
+        start: note.startTime,
+        end: note.endTime,
+        name: rdPitchName(note.pitch),
+        dur: Math.max(0.05, note.endTime - note.startTime),
+        vel: (note.velocity ?? 80) / 127,
+      });
+    });
+
+    scroll.appendChild(svg);
+    viewport.removeChild(loading);
+    viewport.appendChild(scroll);
+
+    const playhead = document.createElement("div");
+    playhead.className = "midi-playhead";
+    viewport.appendChild(playhead);
+
+    const transport = document.createElement("div");
+    transport.className = "midi-transport";
+    const playBtn = document.createElement("button");
+    playBtn.type = "button";
+    playBtn.className = "btn btn-primary midi-play-btn";
+    playBtn.innerHTML = '<i class="bi bi-play-fill"></i>';
+    const timeLabel = document.createElement("span");
+    timeLabel.className = "midi-time";
+    timeLabel.textContent = `0:00 / ${rdFmt(totalTime)}`;
+    const dl = document.createElement("a");
+    dl.className = "btn btn-sm btn-link p-0 ml-2";
+    dl.href = rdEnc(midiPath);
+    dl.setAttribute("download", "");
+    dl.textContent = "Download .mid";
+    transport.appendChild(playBtn);
+    transport.appendChild(timeLabel);
+    transport.appendChild(dl);
+
+    container.appendChild(transport);
+
+    let playing = false;
+    let rafId = null;
+    let timeouts = [];
+    let startWall = 0;
+    let startOffset = 0;
+
+    function setPlayhead(elapsed) {
+      const x = elapsed * RD_PX_PER_SEC;
+      playhead.style.left = `${x - scroll.scrollLeft}px`;
+      if (x - scroll.scrollLeft > viewport.clientWidth - 60 || x < scroll.scrollLeft) {
+        scroll.scrollLeft = Math.max(0, x - viewport.clientWidth / 2);
+      }
+      timeLabel.textContent = `${rdFmt(elapsed)} / ${rdFmt(totalTime)}`;
+    }
+
+    function stop(reset = true) {
+      playing = false;
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = null;
+      timeouts.forEach(clearTimeout);
+      timeouts = [];
+      if (rdSynthPromise) rdSynthPromise.then((s) => s.releaseAll());
+      events.forEach((e) => e.rect.setAttribute("fill", RD_MELODY));
+      viewport.classList.remove("playing");
+      playBtn.innerHTML = '<i class="bi bi-play-fill"></i>';
+      if (reset) { startOffset = 0; setPlayhead(0); }
+    }
+
+    async function play(fromOffset = 0) {
+      rdStopActive();
+      Array.from(document.getElementsByTagName("audio")).forEach((a) => a.pause());
+      const synth = await rdGetSynth();
+      playing = true;
+      startOffset = fromOffset;
+      startWall = performance.now();
+      viewport.classList.add("playing");
+      playBtn.innerHTML = '<i class="bi bi-pause-fill"></i>';
+      rdActiveStop = () => stop(true);
+      events.forEach((e) => {
+        const when = e.start - fromOffset;
+        if (when < -0.01) return;
+        const id = setTimeout(() => {
+          if (!playing) return;
+          synth.triggerAttackRelease(e.name, e.dur, undefined, e.vel);
+        }, Math.max(0, when * 1000));
+        timeouts.push(id);
+      });
+      const tick = () => {
+        if (!playing) return;
+        const elapsed = fromOffset + (performance.now() - startWall) / 1000;
+        events.forEach((e) => {
+          const on = elapsed >= e.start && elapsed < e.end;
+          e.rect.setAttribute("fill", on ? RD_ACTIVE : RD_MELODY);
+        });
+        setPlayhead(Math.min(elapsed, totalTime));
+        if (elapsed >= totalTime) { stop(true); return; }
+        rafId = requestAnimationFrame(tick);
+      };
+      rafId = requestAnimationFrame(tick);
+    }
+
+    playBtn.addEventListener("click", () => {
+      if (playing) stop(true);
+      else play(startOffset >= totalTime ? 0 : 0);
+    });
+  }
+
+  async function rdLoadLyrics(box, lyricsPath) {
+    try {
+      const res = await fetch(rdEnc(lyricsPath));
+      if (!res.ok) throw new Error(res.status);
+      const text = await res.text();
+      box.textContent = text
+        .split(/\r?\n/)
+        .map((l) => l.replace(/#/g, "").trim())
+        .filter((l) => l.length)
+        .join("\n");
+    } catch (err) {
+      box.textContent = "Lyrics unavailable.";
+      console.error(err);
+    }
+  }
+
+  (function buildRealDataset() {
+    const grid = document.getElementById("real-dataset-grid");
+    RD_SONGS.forEach((name) => {
+      const meta = rdParseName(name);
+      const col = document.createElement("div");
+      col.className = "col-12 col-lg-6 mb-4";
+      const card = document.createElement("div");
+      card.className = "rd-card";
+
+      const head = document.createElement("div");
+      const badges = [];
+      if (meta.bpm) badges.push(`<span class="rd-badge">${meta.bpm} BPM</span>`);
+      if (meta.key) badges.push(`<span class="rd-badge">Key ${meta.key}</span>`);
+      head.innerHTML = `
+        <div class="rd-title">${meta.title}</div>
+        <div class="rd-sub">${meta.artist}</div>
+        <div style="margin-top:6px;">${badges.join("")}</div>
+      `;
+      card.appendChild(head);
+
+      const audioLabel = document.createElement("div");
+      audioLabel.className = "rd-label";
+      audioLabel.textContent = "Real recording (aligned segment)";
+      card.appendChild(audioLabel);
+      const audio = document.createElement("audio");
+      audio.controls = true;
+      audio.preload = "none";
+      audio.style.width = "100%";
+      audio.src = rdEnc(`${RD_BASE}/audio/${name}.mp3`);
+      card.appendChild(audio);
+
+      const midiLabel = document.createElement("div");
+      midiLabel.className = "rd-label";
+      midiLabel.textContent = "Human-annotated vocal MIDI";
+      card.appendChild(midiLabel);
+      const midiHost = document.createElement("div");
+      card.appendChild(midiHost);
+
+      const lyricsLabel = document.createElement("div");
+      lyricsLabel.className = "rd-label";
+      lyricsLabel.textContent = "Lyrics";
+      card.appendChild(lyricsLabel);
+      const lyricsBox = document.createElement("div");
+      lyricsBox.className = "rd-lyrics";
+      lyricsBox.textContent = "Loading lyrics…";
+      card.appendChild(lyricsBox);
+
+      col.appendChild(card);
+      grid.appendChild(col);
+
+      rdMountMidi(midiHost, `${RD_BASE}/midi/${name}.mid`);
+      rdLoadLyrics(lyricsBox, `${RD_BASE}/lyrics/${name}.txt`);
+    });
   })();
 </script>
 
