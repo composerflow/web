@@ -236,6 +236,7 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
       <li><a href="#sec-l2m-model">Same Lyrics and Singer, Different Lyrics-to-Melody Model</a></li>
       <li><a href="#sec-melody-source">Melody from Existing Songs vs Auto-generated Melody (2 Variants)</a></li>
       <li><a href="#sec-real-dataset">Real-Song Dataset: Aligned Audio, Human MIDI &amp; Lyrics (8 Examples)</a></li>
+      <li><a href="#sec-listening-test">Listening Test: MIDI-SAG on Detected Vocal MIDI (8 Examples)</a></li>
     </ol>
   </section>
 </div>
@@ -5986,6 +5987,89 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
 
       rdMountMidi(midiHost, `${RD_BASE}/midi/${name}.mid`);
       rdLoadLyrics(lyricsBox, `${RD_BASE}/lyrics/${name}.txt`);
+    });
+  })();
+</script>
+
+
+<!-- =======================
+     Section 9 — Listening Test: MIDI-SAG on detected vocal MIDI
+     ======================= -->
+<div class="container my-4">
+  <section id="sec-listening-test-wrap" style="margin: 32px 0;">
+    <h2 id="sec-listening-test" style="margin: 0 0 10px;">9. Listening Test: MIDI-SAG on Detected Vocal MIDI</h2>
+    <p style="margin: 0 0 18px; opacity: 0.85; line-height: 1.45;">
+      Eight examples used in our subjective listening test. For each song we provide the
+      <strong>real song</strong> (the original backing track with the vocal replaced by synthesized vocal using human annotated MIDI),
+      the <strong>Audio-SAG</strong> generation, and the <strong>MIDI-SAG</strong> baseline,
+      plus a <strong>detected MIDI-SAG</strong> variant conditioned on the detected vocal MIDI.
+    </p>
+    <div id="listening-test-grid" class="row"></div>
+  </section>
+</div>
+<script>
+  (function buildListeningTest() {
+    const LT_BASE = "./listening_test_mp3";
+    const LT_SONGS = [
+      "不必对我好-李克勤-65.000-bE",
+      "不想再听你说对不起-梦然-57-Db",
+      "不要对我说无所谓 - 祁隆-70-G",
+      "初见-刘美麟-72-G",
+      "别爱不爱你的人-曾春年-55-Gb",
+      "别说话-钟梓杰-120-Eb",
+      "刺猬-温岚-62-F#",
+      "单向箭头-双笙(陈元汐)-60-D",
+    ];
+    const LT_TRACKS = [
+      { file: "aligned_real_music_region.mp3", label: "Real song" },
+      { file: "realsong_score.mp3", label: "MIDI-SAG" },
+      { file: "vocal_audio_rotary_MIDI-SAG.mp3", label: "Audio-SAG" },
+      { file: "detected_MIDI-SAG.mp3", label: "Detected MIDI-SAG" },
+    ];
+
+    function ltParseName(name) {
+      const parts = name.split("-").map((p) => p.trim());
+      const key = parts.length >= 4 ? parts[parts.length - 1] : "";
+      const bpm = parts.length >= 4 ? parts[parts.length - 2] : "";
+      const artist = parts.length >= 4 ? parts[parts.length - 3] : "";
+      const title = parts.slice(0, Math.max(1, parts.length - 3)).join("-");
+      return { title, artist, bpm, key };
+    }
+
+    const grid = document.getElementById("listening-test-grid");
+    LT_SONGS.forEach((name) => {
+      const meta = ltParseName(name);
+      const col = document.createElement("div");
+      col.className = "col-12 col-lg-6 mb-4";
+      const card = document.createElement("div");
+      card.className = "rd-card";
+
+      const head = document.createElement("div");
+      const badges = [];
+      if (meta.bpm) badges.push(`<span class="rd-badge">${meta.bpm} BPM</span>`);
+      if (meta.key) badges.push(`<span class="rd-badge">Key ${meta.key}</span>`);
+      head.innerHTML = `
+        <div class="rd-title">${meta.title}</div>
+        <div class="rd-sub">${meta.artist}</div>
+        <div style="margin-top:6px;">${badges.join("")}</div>
+      `;
+      card.appendChild(head);
+
+      LT_TRACKS.forEach((track) => {
+        const label = document.createElement("div");
+        label.className = "rd-label";
+        label.textContent = track.label;
+        card.appendChild(label);
+        const audio = document.createElement("audio");
+        audio.controls = true;
+        audio.preload = "none";
+        audio.style.width = "100%";
+        audio.src = encodeURI(`${LT_BASE}/${name}/${track.file}`);
+        card.appendChild(audio);
+      });
+
+      col.appendChild(card);
+      grid.appendChild(col);
     });
   })();
 </script>
