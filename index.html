@@ -6064,13 +6064,43 @@ To address this long-form bottleneck, we propose MIDI-informed singing accompani
         audio.controls = true;
         audio.preload = "none";
         audio.style.width = "100%";
-        audio.src = encodeURI(`${LT_BASE}/${name}/${track.file}`);
+        audio.src = encodeURI(`${LT_BASE}/${name}/${track.file}`).replace(/#/g, "%23");
         card.appendChild(audio);
       });
 
       col.appendChild(card);
       grid.appendChild(col);
     });
+  })();
+</script>
+
+<!-- =======================
+     Move Rebuttal sections (8 & 9) to the top, under a "Rebuttal Update" banner
+     ======================= -->
+<script>
+  (function relocateRebuttalSections() {
+    const overview = document.querySelector('section[aria-label="Page overview"]');
+    const s8 = document.getElementById('sec-real-dataset-wrap');
+    const s9 = document.getElementById('sec-listening-test-wrap');
+    if (!overview || !s8 || !s9) return;
+    const overviewContainer = overview.closest('.container');
+    const c8 = s8.closest('.container');
+    const c9 = s9.closest('.container');
+    if (!overviewContainer || !c8 || !c9) return;
+    const parent = overviewContainer.parentNode;
+    const ref = overviewContainer.nextSibling;
+
+    const banner = document.createElement('div');
+    banner.className = 'container my-4';
+    banner.innerHTML =
+      '<h2 style="margin: 24px 0 6px; font-weight: 800;">Rebuttal Update</h2>' +
+      '<p style="margin: 0 0 8px; opacity: 0.85; line-height: 1.45;">' +
+      'New material added during the rebuttal period: the real-song dataset and the ' +
+      'subjective listening-test examples below.</p>';
+
+    parent.insertBefore(banner, ref);
+    parent.insertBefore(c8, ref);
+    parent.insertBefore(c9, ref);
   })();
 </script>
 
